@@ -1,0 +1,2089 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>APSAS — Nagpur Safety Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #060B14;
+  --sidebar:  #080E1C;
+  --card:     #0C1628;
+  --card2:    #101E35;
+  --border:   #1A2D4A;
+  --blue:     #1A56DB;
+  --blue-lt:  #2563EB;
+  --cyan:     #06B6D4;
+  --green:    #00E676;
+  --green-d:  #00A152;
+  --yellow:   #FFB300;
+  --orange:   #FF6D00;
+  --red:      #FF1744;
+  --red-glow: rgba(255,23,68,0.3);
+  --text:     #CBD5E1;
+  --text-lt:  #E2E8F0;
+  --text-dim: #4A6080;
+  --mono:     'JetBrains Mono', monospace;
+  --head:     'Rajdhani', sans-serif;
+  --body:     'Barlow', sans-serif;
+  --cond:     'Barlow Condensed', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--body);}
+
+/* ── LAYOUT ── */
+#app{display:flex;height:100vh;width:100vw;}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:230px;flex-shrink:0;background:var(--sidebar);
+  border-right:1px solid var(--border);display:flex;
+  flex-direction:column;overflow-y:auto;z-index:10;
+}
+#sidebar::-webkit-scrollbar{width:4px;}
+#sidebar::-webkit-scrollbar-track{background:transparent;}
+#sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+.logo-wrap{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
+.logo-main{font-family:var(--head);font-size:26px;font-weight:700;color:var(--text-lt);letter-spacing:2px;}
+.logo-main span{color:var(--blue-lt);}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:2px;}
+.city-badge{
+  margin-top:8px;display:inline-flex;align-items:center;gap:6px;
+  background:var(--card2);border:1px solid var(--border);border-radius:4px;
+  padding:4px 10px;font-family:var(--mono);font-size:10px;color:var(--cyan);letter-spacing:1px;
+}
+.city-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+
+.sb-section{padding:14px 16px;border-bottom:1px solid var(--border);}
+.sb-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
+
+/* ── CLOCK ── */
+#live-clock{font-family:var(--mono);font-size:22px;color:var(--text-lt);letter-spacing:1px;}
+#live-date{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+/* ── ZONE STATS ── */
+.zone-stat{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.zone-stat-label{display:flex;align-items:center;gap:8px;font-size:13px;font-family:var(--cond);font-weight:600;letter-spacing:0.5px;}
+.zs-dot{width:8px;height:8px;border-radius:2px;}
+.zone-stat-count{font-family:var(--mono);font-size:12px;color:var(--text-lt);}
+
+/* ── LEGEND ── */
+.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;font-family:var(--cond);}
+.leg-box{width:28px;height:12px;border-radius:3px;flex-shrink:0;}
+
+/* ── NAV ── */
+.sb-nav{padding:12px 10px;}
+.nav-btn{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:9px 12px;border:none;background:transparent;cursor:pointer;
+  border-radius:6px;color:var(--text);font-family:var(--cond);
+  font-size:14px;font-weight:600;letter-spacing:0.5px;transition:all 0.2s;
+  margin-bottom:3px;text-align:left;
+}
+.nav-btn:hover{background:var(--card2);color:var(--text-lt);}
+.nav-btn.active{background:linear-gradient(90deg,rgba(26,86,219,0.3),transparent);color:var(--blue-lt);border-left:2px solid var(--blue-lt);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:10px;}
+
+/* ── AI STATUS ── */
+.ai-status{margin:0 16px 14px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.ai-status-head{font-family:var(--mono);font-size:9px;color:var(--cyan);letter-spacing:1px;margin-bottom:6px;}
+.ai-bar-wrap{background:#0a1525;border-radius:4px;height:6px;overflow:hidden;margin-bottom:4px;}
+.ai-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:4px;transition:width 1s;}
+.ai-conf{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
+.ai-conf span{color:var(--green);font-weight:600;}
+
+/* ── MAP AREA ── */
+#map-wrap{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+#map{position:absolute;inset:0;}
+
+/* ── TOP BAR ── */
+#top-bar{
+  position:absolute;top:14px;left:14px;right:14px;z-index:5;
+  display:flex;align-items:center;gap:10px;
+}
+.search-box{
+  flex:1;background:rgba(8,14,28,0.92);border:1px solid var(--border);
+  border-radius:8px;padding:9px 14px;color:var(--text-lt);
+  font-family:var(--body);font-size:13px;outline:none;
+  backdrop-filter:blur(10px);
+}
+.search-box::placeholder{color:var(--text-dim);}
+.tb-chip{
+  background:rgba(8,14,28,0.92);border:1px solid var(--border);
+  border-radius:8px;padding:9px 14px;font-family:var(--mono);
+  font-size:11px;color:var(--text);white-space:nowrap;backdrop-filter:blur(10px);
+  cursor:pointer;transition:all 0.2s;
+}
+.tb-chip:hover{border-color:var(--blue);color:var(--blue-lt);}
+.tb-chip.alert-chip{border-color:rgba(255,23,68,0.5);color:var(--red);animation:blink 2s infinite;}
+
+/* ── MAP LEGEND ── */
+#map-legend{
+  position:absolute;bottom:30px;left:14px;z-index:5;
+  background:rgba(8,14,28,0.92);border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;backdrop-filter:blur(10px);
+  font-family:var(--cond);font-size:12px;
+}
+.ml-title{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:8px;}
+.ml-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.ml-dot{width:10px;height:10px;border-radius:50%;}
+.ml-last{margin-bottom:0;}
+
+/* ── LAYER TOGGLE ── */
+#layer-toggle{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:5;
+  background:rgba(8,14,28,0.92);border:1px solid var(--border);
+  border-radius:8px;padding:8px 14px;backdrop-filter:blur(10px);
+  display:flex;align-items:center;gap:8px;
+}
+.toggle-btn{
+  background:var(--card2);border:1px solid var(--border);border-radius:5px;
+  padding:5px 12px;font-family:var(--mono);font-size:10px;color:var(--text-dim);
+  cursor:pointer;transition:all 0.2s;
+}
+.toggle-btn.on{background:rgba(26,86,219,0.3);border-color:var(--blue);color:var(--blue-lt);}
+
+/* ── RIGHT PANEL ── */
+#panel{
+  width:320px;flex-shrink:0;background:var(--sidebar);
+  border-left:1px solid var(--border);display:flex;flex-direction:column;z-index:10;
+}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);}
+.ptab{
+  flex:1;padding:12px 4px;text-align:center;cursor:pointer;
+  font-family:var(--mono);font-size:9px;letter-spacing:1px;
+  color:var(--text-dim);transition:all 0.2s;border:none;background:none;
+}
+.ptab:hover{color:var(--text);}
+.ptab.active{color:var(--blue-lt);border-bottom:2px solid var(--blue-lt);}
+.ptab-icon{font-size:16px;display:block;margin-bottom:2px;}
+.panel-body{flex:1;overflow-y:auto;padding:16px;}
+.panel-body::-webkit-scrollbar{width:4px;}
+.panel-body::-webkit-scrollbar-track{background:transparent;}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;}
+.card-title{font-family:var(--head);font-size:14px;font-weight:700;color:var(--text-lt);margin-bottom:10px;letter-spacing:0.5px;}
+.card-sub{font-size:11px;color:var(--text-dim);margin-bottom:12px;font-family:var(--mono);}
+
+/* ── FORM ELEMENTS ── */
+.form-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:5px;display:block;}
+select,input{
+  width:100%;background:var(--card2);border:1px solid var(--border);
+  border-radius:6px;padding:9px 12px;color:var(--text-lt);font-family:var(--body);
+  font-size:13px;outline:none;margin-bottom:10px;transition:border 0.2s;
+}
+select:focus,input:focus{border-color:var(--blue);}
+select option{background:var(--card);}
+.btn{
+  width:100%;padding:11px;border:none;border-radius:6px;cursor:pointer;
+  font-family:var(--head);font-size:15px;font-weight:700;letter-spacing:1px;
+  transition:all 0.2s;margin-top:4px;
+}
+.btn-blue{background:linear-gradient(135deg,var(--blue),var(--blue-lt));color:#fff;}
+.btn-blue:hover{opacity:0.9;transform:translateY(-1px);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);margin-top:6px;}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue-lt);}
+
+/* ── SOS BUTTON ── */
+#sos-btn{
+  width:100%;height:120px;border-radius:12px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#8B0000,var(--red));
+  color:#fff;font-family:var(--head);font-size:36px;font-weight:700;
+  letter-spacing:3px;position:relative;overflow:hidden;
+  box-shadow:0 0 30px var(--red-glow);transition:all 0.2s;
+  animation:sos-pulse 3s infinite;
+}
+#sos-btn:hover{transform:scale(1.02);box-shadow:0 0 50px var(--red-glow);}
+#sos-btn:active{transform:scale(0.98);}
+#sos-btn::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,rgba(255,255,255,0.1),transparent);
+}
+#sos-countdown{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:60px;font-weight:700;display:none;
+}
+#sos-cancel{display:none;}
+
+.contact-card{
+  display:flex;align-items:center;gap:10px;background:var(--card2);
+  border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:6px;
+}
+.contact-avatar{
+  width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
+  flex-shrink:0;font-family:var(--head);
+}
+.contact-name{font-size:13px;color:var(--text-lt);font-weight:500;}
+.contact-rel{font-size:10px;color:var(--text-dim);font-family:var(--mono);}
+
+/* ── ROUTE RESULT ── */
+#route-result{display:none;}
+.route-option{
+  background:var(--card2);border:1px solid var(--border);border-radius:8px;
+  padding:12px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;
+}
+.route-option:hover{border-color:var(--blue);}
+.route-option.selected{border-color:var(--green);background:rgba(0,230,118,0.05);}
+.ro-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.ro-name{font-family:var(--head);font-size:14px;font-weight:700;color:var(--text-lt);}
+.ro-badge{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:4px;}
+.badge-safe{background:rgba(0,230,118,0.15);color:var(--green);}
+.badge-fast{background:rgba(255,109,0,0.15);color:var(--orange);}
+.ro-stats{display:flex;gap:16px;}
+.ro-stat{font-size:11px;font-family:var(--mono);color:var(--text-dim);}
+.ro-stat span{color:var(--text-lt);font-weight:500;}
+.risk-bar-wrap{background:#0a1525;border-radius:4px;height:4px;margin-top:8px;overflow:hidden;}
+.risk-bar{height:100%;border-radius:4px;}
+
+/* ── INCIDENT LIST ── */
+.incident-item{
+  display:flex;gap:10px;padding:10px 12px;background:var(--card2);
+  border:1px solid var(--border);border-radius:6px;margin-bottom:6px;
+  align-items:flex-start;
+}
+.inc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.inc-info{flex:1;}
+.inc-type{font-size:13px;font-weight:500;color:var(--text-lt);font-family:var(--cond);}
+.inc-loc{font-size:10px;color:var(--text-dim);font-family:var(--mono);}
+.inc-time{font-size:10px;color:var(--text-dim);font-family:var(--mono);flex-shrink:0;}
+
+/* ── DASHBOARD ── */
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.metric{
+  background:var(--card2);border:1px solid var(--border);border-radius:8px;
+  padding:12px;text-align:center;
+}
+.metric-val{font-family:var(--head);font-size:28px;font-weight:700;color:var(--text-lt);}
+.metric-lbl{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:2px;}
+.zone-bar-item{margin-bottom:8px;}
+.zb-head{display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);margin-bottom:4px;}
+.zb-fill{height:6px;border-radius:4px;transition:width 1s;}
+.patrol-item{
+  display:flex;align-items:center;gap:10px;padding:10px;
+  background:var(--card2);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;
+}
+.patrol-rank{
+  font-family:var(--mono);font-size:11px;color:var(--text-dim);
+  width:20px;text-align:center;flex-shrink:0;
+}
+.patrol-name{font-size:13px;font-family:var(--cond);font-weight:600;color:var(--text-lt);}
+.patrol-score{margin-left:auto;font-family:var(--mono);font-size:11px;}
+
+/* ── POPUP ── */
+.maplibregl-popup-content{
+  background:var(--card) !important;border:1px solid var(--border) !important;
+  border-radius:10px !important;padding:14px !important;
+  font-family:var(--body) !important;box-shadow:0 20px 60px rgba(0,0,0,0.5) !important;
+  min-width:200px !important;
+}
+.maplibregl-popup-tip{display:none !important;}
+.popup-name{font-family:var(--head);font-size:16px;font-weight:700;color:var(--text-lt);margin-bottom:2px;}
+.popup-crs{font-family:var(--mono);font-size:11px;margin-bottom:8px;}
+.popup-row{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);}
+.popup-row:last-child{border-bottom:none;}
+.popup-key{color:var(--text-dim);font-family:var(--mono);}
+.popup-val{color:var(--text-lt);font-weight:500;}
+.tier-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mono);}
+
+/* ── NOTIFICATION TOAST ── */
+#toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:12px 20px;font-family:var(--mono);font-size:12px;color:var(--text-lt);
+  z-index:9999;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  white-space:nowrap;box-shadow:0 10px 40px rgba(0,0,0,0.5);
+}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── USER LOCATION PULSE ── */
+.user-loc{
+  width:26px;height:26px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,0.45));
+}
+.user-loc::before{
+  content:'📍';
+  font-size:24px;
+  line-height:1;
+  animation:loc-bounce 1.8s ease-in-out infinite;
+}
+.user-loc::after{
+  content:'';position:absolute;top:50%;left:50%;width:8px;height:8px;
+  margin-left:-4px;margin-top:8px;border-radius:50%;
+  border:2px solid var(--blue-lt);animation:loc-pulse 2s infinite;
+}
+.route-start-loc{
+  width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,0.45));
+}
+.route-start-loc::before{
+  content:'📍';
+  font-size:18px;
+  line-height:1;
+}
+
+/* ── SOS SENT ── */
+#sos-sent{display:none;text-align:center;padding:16px;}
+.sos-sent-icon{font-size:48px;margin-bottom:12px;}
+.sos-sent-title{font-family:var(--head);font-size:20px;font-weight:700;color:var(--green);margin-bottom:6px;}
+.sos-sent-sub{font-size:12px;color:var(--text-dim);font-family:var(--mono);}
+
+/* ── ANIMATIONS ── */
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.6;}}
+@keyframes loc-pulse{0%{transform:scale(1);opacity:1;}100%{transform:scale(2.5);opacity:0;}}
+@keyframes loc-bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+@keyframes sos-pulse{0%,100%{box-shadow:0 0 30px var(--red-glow);}50%{box-shadow:0 0 60px rgba(255,23,68,0.5);}}
+@keyframes slide-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.slide-in{animation:slide-in 0.3s ease-out;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin{animation:spin 1s linear infinite;display:inline-block;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-bottom-left{display:none;}
+.maplibregl-ctrl-top-right .maplibregl-ctrl{margin:0;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<aside id="sidebar">
+  <div class="logo-wrap">
+    <div class="logo-main">AP<span>SAS</span></div>
+    <div class="logo-sub">PREDICTIVE SAFETY ALERT SYSTEM</div>
+    <div class="city-badge">
+      <span class="city-dot"></span>NAGPUR, MH
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">LIVE TIME</div>
+    <div id="live-clock">--:--:--</div>
+    <div id="live-date">Loading...</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">ZONE STATUS</div>
+    <div class="zone-stat">
+      <div class="zone-stat-label"><div class="zs-dot" style="background:var(--red)"></div>HIGH RISK</div>
+      <div class="zone-stat-count" id="count-high">4</div>
+    </div>
+    <div class="zone-stat">
+      <div class="zone-stat-label"><div class="zs-dot" style="background:var(--orange)"></div>MODERATE</div>
+      <div class="zone-stat-count" id="count-mod">5</div>
+    </div>
+    <div class="zone-stat">
+      <div class="zone-stat-label"><div class="zs-dot" style="background:var(--yellow)"></div>ADVISORY</div>
+      <div class="zone-stat-count" id="count-adv">4</div>
+    </div>
+    <div class="zone-stat">
+      <div class="zone-stat-label"><div class="zs-dot" style="background:var(--green)"></div>SAFE</div>
+      <div class="zone-stat-count" id="count-safe">7</div>
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">RISK LEGEND</div>
+    <div class="legend-item"><div class="leg-box" style="background:var(--red);opacity:0.7"></div>Critical / High Risk (CRS >0.75)</div>
+    <div class="legend-item"><div class="leg-box" style="background:var(--orange);opacity:0.7"></div>Moderate Risk (0.55–0.75)</div>
+    <div class="legend-item"><div class="leg-box" style="background:var(--yellow);opacity:0.7"></div>Advisory (0.35–0.55)</div>
+    <div class="legend-item"><div class="leg-box" style="background:var(--green);opacity:0.7"></div>Safe Zone (CRS &lt;0.35)</div>
+  </div>
+
+  <div class="sb-nav">
+    <div class="sb-label" style="padding:0 6px 8px">NAVIGATION</div>
+    <button class="nav-btn active" onclick="switchTab('route')">Safe Route</button>
+    <button class="nav-btn" onclick="switchTab('sos')">SOS Alert<span class="nav-badge">LIVE</span></button>
+    <button class="nav-btn" onclick="switchTab('report')">Report Incident</button>
+    <button class="nav-btn" onclick="switchTab('dash')">LE Dashboard</button>
+  </div>
+
+  <div class="ai-status">
+    <div class="ai-status-head">⚡ AI MODEL STATUS</div>
+    <div class="ai-bar-wrap"><div class="ai-bar" id="ai-bar" style="width:87%"></div></div>
+    <div class="ai-conf">Confidence: <span id="ai-conf-val">87.3%</span> &nbsp;·&nbsp; Updated <span id="ai-upd">2 min ago</span></div>
+  </div>
+</aside>
+
+<!-- ══════════════ MAP ══════════════ -->
+<div id="map-wrap">
+  <div id="map"></div>
+
+  <div id="top-bar">
+    <input class="search-box" type="text" placeholder="🔍  Search area in Nagpur..."/>
+    <div class="tb-chip">👤 Sitabuldi</div>
+    <div class="tb-chip alert-chip">🚨 3 Alerts</div>
+    <div class="tb-chip" id="refresh-btn" onclick="refreshZones()">↻ Refresh</div>
+  </div>
+
+  <div id="map-legend">
+    <div class="ml-title">ACTIVE ZONES</div>
+    <div class="ml-row"><div class="ml-dot" style="background:var(--red)"></div>High Risk Area</div>
+    <div class="ml-row"><div class="ml-dot" style="background:var(--orange)"></div>Moderate Risk</div>
+    <div class="ml-row"><div class="ml-dot" style="background:var(--yellow)"></div>Advisory Zone</div>
+    <div class="ml-row ml-last"><div class="ml-dot" style="background:var(--green)"></div>Safe Zone</div>
+  </div>
+
+  <div id="layer-toggle">
+    <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">LAYERS:</span>
+    <button class="toggle-btn on" id="toggle-zones" onclick="toggleLayer('zones')">ZONES</button>
+    <button class="toggle-btn on" id="toggle-heat" onclick="toggleLayer('heat')">HEATMAP</button>
+    <button class="toggle-btn" id="toggle-route" onclick="toggleLayer('route')">ROUTE</button>
+  </div>
+</div>
+
+<!-- ══════════════ RIGHT PANEL ══════════════ -->
+<div id="panel">
+  <div class="panel-tabs">
+    <button class="ptab active" id="ptab-route" onclick="switchTab('route')">ROUTE</button>
+    <button class="ptab" id="ptab-sos" onclick="switchTab('sos')">SOS</button>
+    <button class="ptab" id="ptab-report" onclick="switchTab('report')">REPORT</button>
+    <button class="ptab" id="ptab-dash" onclick="switchTab('dash')">DASH</button>
+  </div>
+
+  <!-- ── ROUTE TAB ── -->
+  <div class="panel-body" id="tab-route">
+    <div class="card">
+      <div class="card-title">🗺️ Safe Route Planner</div>
+      <div class="card-sub">AI-powered routing avoids high-risk zones</div>
+      <label class="form-label">ORIGIN</label>
+      <select id="route-from">
+        <option value="">Select starting area...</option>
+        <option value="civil-lines">Civil Lines (Safe)</option>
+        <option value="dharampeth">Dharampeth (Safe)</option>
+        <option value="ramdaspeth">Ramdaspeth (Safe)</option>
+        <option value="sitabuldi">Sitabuldi (Moderate)</option>
+        <option value="sadar">Sadar (Moderate)</option>
+        <option value="shankar-ngr">Shankar Nagar (Safe)</option>
+        <option value="itwari">Itwari (High Risk)</option>
+        <option value="gandhibagh">Gandhibagh (High Risk)</option>
+      </select>
+      <label class="form-label">DESTINATION</label>
+      <select id="route-to">
+        <option value="">Select destination...</option>
+        <option value="civil-lines">Civil Lines (Safe)</option>
+        <option value="dharampeth">Dharampeth (Safe)</option>
+        <option value="ramdaspeth">Ramdaspeth (Safe)</option>
+        <option value="sitabuldi">Sitabuldi (Moderate)</option>
+        <option value="sadar">Sadar (Moderate)</option>
+        <option value="bajaj-nagar">Bajaj Nagar (Safe)</option>
+        <option value="itwari">Itwari (High Risk)</option>
+        <option value="wardha-road">Wardha Road (Advisory)</option>
+        <option value="nandanvan">Nandanvan (Advisory)</option>
+      </select>
+      <label class="form-label">TRAVEL MODE</label>
+      <select id="travel-mode">
+        <option value="walk">🚶 Walking</option>
+        <option value="bike">🏍️ Two-Wheeler</option>
+        <option value="car">🚗 Car</option>
+        <option value="auto">🛺 Auto Rickshaw</option>
+      </select>
+      <button class="btn btn-blue" onclick="planRoute()">⚡ FIND SAFE ROUTE</button>
+    </div>
+
+    <div id="route-result">
+      <div class="card" style="border-color:var(--border)">
+        <div class="card-title">Route Options</div>
+        <div class="route-option selected" id="ro-safe" onclick="selectRoute('safe')">
+          <div class="ro-head">
+            <div class="ro-name">🛡️ Safe Route</div>
+            <div class="ro-badge badge-safe">RECOMMENDED</div>
+          </div>
+          <div class="ro-stats">
+            <div class="ro-stat">Time: <span id="safe-time">--</span></div>
+            <div class="ro-stat">Dist: <span id="safe-dist">--</span></div>
+            <div class="ro-stat">Risk: <span id="safe-risk" style="color:var(--green)">--</span></div>
+          </div>
+          <div class="risk-bar-wrap"><div class="risk-bar" id="safe-rbar" style="background:var(--green);width:15%"></div></div>
+        </div>
+        <div class="route-option" id="ro-fast" onclick="selectRoute('fast')">
+          <div class="ro-head">
+            <div class="ro-name">⚡ Fastest Route</div>
+            <div class="ro-badge badge-fast">AVOID IF POSSIBLE</div>
+          </div>
+          <div class="ro-stats">
+            <div class="ro-stat">Time: <span id="fast-time">--</span></div>
+            <div class="ro-stat">Dist: <span id="fast-dist">--</span></div>
+            <div class="ro-stat">Risk: <span id="fast-risk" style="color:var(--orange)">--</span></div>
+          </div>
+          <div class="risk-bar-wrap"><div class="risk-bar" id="fast-rbar" style="background:var(--orange);width:60%"></div></div>
+        </div>
+        <button class="btn btn-blue" style="margin-top:4px" onclick="startNavigation()">▶ START NAVIGATION</button>
+        <button class="btn btn-outline" onclick="clearRoute()">✕ Clear Route</button>
+      </div>
+    </div>
+
+    <!-- Recent alerts -->
+    <div class="card">
+      <div class="card-title">⚡ Recent Incidents</div>
+      <div id="incident-list"></div>
+    </div>
+  </div>
+
+  <!-- ── SOS TAB ── -->
+  <div class="panel-body" id="tab-sos" style="display:none">
+    <div id="sos-normal">
+      <div class="card" style="border-color:rgba(255,23,68,0.3)">
+        <div class="card-title" style="color:var(--red)">🆘 Emergency SOS</div>
+        <div class="card-sub">Sends live GPS + audio alert to your contacts</div>
+        <button id="sos-btn" onclick="triggerSOS()">
+          <span id="sos-text">SOS</span>
+          <span id="sos-countdown"></span>
+        </button>
+        <div style="text-align:center;margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--text-dim)">
+          Tap and hold for 2 seconds · 5 second cancel window
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 Emergency Contacts</div>
+        <div id="emergency-contact-list"></div>
+        <button class="btn btn-outline" style="margin-top:6px" onclick="addEmergencyContactPrompt()">+ Add Contact</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📍 Your Location</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:4px">COORDINATES</div>
+        <div id="user-coords" style="font-family:var(--mono);font-size:12px;color:var(--cyan)">21.1458° N, 79.0882° E</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:6px;margin-bottom:2px">AREA</div>
+        <div id="user-area" style="font-size:13px;color:var(--text-lt)">📍 Sitabuldi, Nagpur</div>
+        <div id="user-risk" style="font-family:var(--mono);font-size:10px;color:var(--yellow);margin-top:6px">⚠ MODERATE RISK ZONE</div>
+        <button class="btn btn-outline" style="margin-top:8px" onclick="fetchCurrentLocation()">Refresh Current Location</button>
+      </div>
+    </div>
+
+    <div id="sos-sent" class="slide-in">
+      <div class="sos-sent-icon">✅</div>
+      <div class="sos-sent-title">SOS SENT!</div>
+      <div class="sos-sent-sub" id="sos-sent-sub" style="margin-bottom:16px">Alert delivery status</div>
+      <div id="sos-sent-details" style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:left;background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border)">
+        Awaiting SOS trigger...
+      </div>
+      <button class="btn btn-outline" style="margin-top:16px" onclick="resetSOS()">↩ Back to SOS</button>
+    </div>
+  </div>
+
+  <!-- ── REPORT TAB ── -->
+  <div class="panel-body" id="tab-report" style="display:none">
+    <div class="card">
+      <div class="card-title">📋 Report Incident</div>
+      <div class="card-sub">Community reports update risk scores in real-time</div>
+      <label class="form-label">CRIME TYPE</label>
+      <select id="crime-type">
+        <option value="">Select incident type...</option>
+        <option value="theft">🔓 Theft / Pickpocketing</option>
+        <option value="snatching">⛓️ Chain Snatching</option>
+        <option value="assault">⚔️ Physical Assault</option>
+        <option value="robbery">💼 Robbery</option>
+        <option value="vehicle-theft">🚗 Vehicle Theft</option>
+        <option value="harassment">😟 Harassment</option>
+        <option value="suspicious">👀 Suspicious Activity</option>
+        <option value="other">📌 Other</option>
+      </select>
+      <label class="form-label">LOCATION</label>
+      <select id="report-location">
+        <option value="sitabuldi">Sitabuldi</option>
+        <option value="itwari">Itwari</option>
+        <option value="gandhibagh">Gandhibagh</option>
+        <option value="sadar">Sadar</option>
+        <option value="civil-lines">Civil Lines</option>
+        <option value="dharampeth">Dharampeth</option>
+        <option value="jaripatka">Jaripatka</option>
+        <option value="mankapur">Mankapur</option>
+        <option value="lakadganj">Lakadganj</option>
+        <option value="kamptee-rd">Kamptee Road</option>
+      </select>
+      <label class="form-label">SEVERITY</label>
+      <select id="severity">
+        <option value="low">🟡 Low — Minor incident</option>
+        <option value="medium">🟠 Medium — Needs attention</option>
+        <option value="high">🔴 High — Immediate danger</option>
+      </select>
+      <label class="form-label">DESCRIPTION (OPTIONAL)</label>
+      <input type="text" id="report-desc" placeholder="Brief description..."/>
+      <button class="btn btn-blue" onclick="submitReport()">📤 SUBMIT REPORT</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ℹ️ How Reports Work</div>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.6">
+        <div style="margin-bottom:6px">🔹 Reports are verified by AI before affecting risk scores</div>
+        <div style="margin-bottom:6px">🔹 3+ independent reports raise zone risk level</div>
+        <div style="margin-bottom:6px">🔹 Scores auto-decay after 4 hours without new reports</div>
+        <div>🔹 Duplicate reports from same device are filtered</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 My Reports</div>
+      <div id="my-reports">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:center;padding:16px">No reports submitted yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD TAB ── -->
+  <div class="panel-body" id="tab-dash" style="display:none">
+    <div class="card">
+      <div class="card-title">📊 City Overview</div>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-val" id="high-zones-count" style="color:var(--red)">0</div>
+          <div class="metric-lbl">HIGH RISK ZONES</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="total-crimes" style="color:var(--text-lt)">847</div>
+          <div class="metric-lbl">TOTAL INCIDENTS</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" id="safe-zones-count" style="color:var(--green)">0</div>
+          <div class="metric-lbl">SAFE ZONES</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val" style="color:var(--cyan)" id="avg-crs">0</div>
+          <div class="metric-lbl">AVG CITY CRS</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔴 Patrol Priority Zones</div>
+      <div class="card-sub">Recommended deployment for next 6 hours</div>
+      <div id="patrol-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📈 Risk Distribution</div>
+      <div id="risk-dist"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⏱️ Crime by Time of Day</div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:60px;margin-top:8px">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="25" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">12A</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="40" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">2A</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="55" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">4A</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="20" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">6A</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="15" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">8A</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="30" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">10A</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="50" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">12P</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="65" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">2P</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="45" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">4P</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="80" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">6P</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="100" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">8P</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="width:100%;border-radius:3px 3px 0 0;" data-h="90" class="time-bar"></div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--text-dim)">10P</div>
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:8px;text-align:center">
+        ⚠ Peak risk: 8–10 PM · Most incidents reported in evening hours
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="toast">Toast message</div>
+
+<script>
+// Dynamic city safety model with synthetic incidents, Dijkstra routing, SOS flow, and live dashboard updates.
+const ZONES = [
+  { id:'itwari', name:'Itwari', lng:79.1080, lat:21.1580, baseRisk:0.62, crs:0.62, tier:'high', incidents:0, top:'-' },
+  { id:'gandhibagh', name:'Gandhibagh', lng:79.0980, lat:21.1495, baseRisk:0.60, crs:0.60, tier:'high', incidents:0, top:'-' },
+  { id:'jaripatka', name:'Jaripatka', lng:79.1180, lat:21.1440, baseRisk:0.58, crs:0.58, tier:'high', incidents:0, top:'-' },
+  { id:'cotton-mkt', name:'Cotton Market', lng:79.0940, lat:21.1640, baseRisk:0.57, crs:0.57, tier:'high', incidents:0, top:'-' },
+  { id:'sadar', name:'Sadar', lng:79.0960, lat:21.1390, baseRisk:0.45, crs:0.45, tier:'moderate', incidents:0, top:'-' },
+  { id:'sitabuldi', name:'Sitabuldi', lng:79.0882, lat:21.1458, baseRisk:0.43, crs:0.43, tier:'moderate', incidents:0, top:'-' },
+  { id:'kamptee-rd', name:'Kamptee Road', lng:79.1150, lat:21.1700, baseRisk:0.44, crs:0.44, tier:'moderate', incidents:0, top:'-' },
+  { id:'mankapur', name:'Mankapur', lng:79.0640, lat:21.1590, baseRisk:0.41, crs:0.41, tier:'moderate', incidents:0, top:'-' },
+  { id:'tehsil', name:'Tehsil', lng:79.0850, lat:21.1610, baseRisk:0.44, crs:0.44, tier:'moderate', incidents:0, top:'-' },
+  { id:'lakadganj', name:'Lakadganj', lng:79.0720, lat:21.1540, baseRisk:0.30, crs:0.30, tier:'advisory', incidents:0, top:'-' },
+  { id:'nandanvan', name:'Nandanvan', lng:79.1050, lat:21.1240, baseRisk:0.31, crs:0.31, tier:'advisory', incidents:0, top:'-' },
+  { id:'wardha-road', name:'Wardha Road', lng:79.1280, lat:21.1100, baseRisk:0.28, crs:0.28, tier:'advisory', incidents:0, top:'-' },
+  { id:'pratap-ngr', name:'Pratap Nagar', lng:79.0590, lat:21.1440, baseRisk:0.29, crs:0.29, tier:'advisory', incidents:0, top:'-' },
+  { id:'civil-lines', name:'Civil Lines', lng:79.0880, lat:21.1510, baseRisk:0.16, crs:0.16, tier:'safe', incidents:0, top:'-' },
+  { id:'dharampeth', name:'Dharampeth', lng:79.0671, lat:21.1315, baseRisk:0.14, crs:0.14, tier:'safe', incidents:0, top:'-' },
+  { id:'ramdaspeth', name:'Ramdaspeth', lng:79.0750, lat:21.1265, baseRisk:0.15, crs:0.15, tier:'safe', incidents:0, top:'-' },
+  { id:'bajaj-nagar', name:'Bajaj Nagar', lng:79.0590, lat:21.1140, baseRisk:0.13, crs:0.13, tier:'safe', incidents:0, top:'-' },
+  { id:'shankar-ngr', name:'Shankar Nagar', lng:79.0740, lat:21.1390, baseRisk:0.17, crs:0.17, tier:'safe', incidents:0, top:'-' },
+  { id:'hingna', name:'Hingna', lng:79.0390, lat:21.1090, baseRisk:0.16, crs:0.16, tier:'safe', incidents:0, top:'-' },
+  { id:'wardhaman', name:'Wardhaman Ngr', lng:79.1190, lat:21.1290, baseRisk:0.22, crs:0.22, tier:'safe', incidents:0, top:'-' }
+];
+
+const ZONE_BY_ID = Object.fromEntries(ZONES.map(z => [z.id, z]));
+const TIER_COLOR = { high:'#FF1744', moderate:'#FF6D00', advisory:'#FFB300', safe:'#00E676' };
+const TIER_OPACITY = { high:0.72, moderate:0.64, advisory:0.56, safe:0.48 };
+const SEVERITY_WEIGHT = { low:1, medium:2, high:3 };
+const TRAVEL_SPEED = { walk:4.8, bike:23, car:34, auto:26 };
+
+const CRIME_TYPES = [
+  'Theft', 'Pickpocketing', 'Chain Snatching', 'Assault', 'Robbery',
+  'Harassment', 'Vehicle Theft', 'Suspicious Activity'
+];
+
+let EMERGENCY_CONTACTS = [
+  { name:'Priya Mehta', relation:'MOTHER', phone:'+91 98765 43210' },
+  { name:'Rahul Deshpande', relation:'BROTHER', phone:'+91 87654 32109' },
+  { name:'Sarika Patil', relation:'FRIEND', phone:'+91 76543 21098' }
+];
+
+const POLICE_STATIONS = [
+  { name:'Sitabuldi Police Station', lng:79.0891, lat:21.1452 },
+  { name:'Sadar Police Station', lng:79.0971, lat:21.1385 },
+  { name:'Itwari Police Station', lng:79.1094, lat:21.1568 },
+  { name:'Dharampeth Police Station', lng:79.0669, lat:21.1322 }
+];
+
+const ROAD_EDGES = [
+  ['civil-lines','sitabuldi'], ['civil-lines','sadar'], ['civil-lines','tehsil'],
+  ['sitabuldi','sadar'], ['sitabuldi','tehsil'], ['sitabuldi','gandhibagh'],
+  ['sitabuldi','ramdaspeth'], ['sitabuldi','shankar-ngr'],
+  ['sadar','gandhibagh'], ['sadar','jaripatka'], ['sadar','nandanvan'],
+  ['gandhibagh','itwari'], ['gandhibagh','jaripatka'], ['gandhibagh','lakadganj'],
+  ['itwari','kamptee-rd'], ['itwari','tehsil'], ['itwari','jaripatka'],
+  ['tehsil','mankapur'], ['mankapur','hingna'], ['mankapur','pratap-ngr'],
+  ['pratap-ngr','dharampeth'], ['pratap-ngr','ramdaspeth'], ['pratap-ngr','shankar-ngr'],
+  ['dharampeth','ramdaspeth'], ['dharampeth','bajaj-nagar'], ['ramdaspeth','bajaj-nagar'],
+  ['shankar-ngr','dharampeth'], ['shankar-ngr','wardhaman'],
+  ['nandanvan','wardha-road'], ['nandanvan','wardhaman'], ['wardhaman','wardha-road'],
+  ['lakadganj','tehsil'], ['lakadganj','nandanvan'], ['kamptee-rd','jaripatka']
+];
+
+const GRAPH = buildGraph(ROAD_EDGES);
+let CRIME_DB = generateSyntheticCrimeEntries(40);
+let USER_REPORTS = [];
+let map, popup;
+let userMarker;
+let routeStartMarker = null;
+let userLocation = { lat: 21.1458, lng: 79.0882 };
+let userWatchId = null;
+let layerState = { zones: true, heat: true, route: false };
+let sosTimer = null;
+let sosSeconds = 5;
+let activeRoute = null;
+let currentRouteSelection = 'safe';
+
+const mapStyle = {
+  version: 8,
+  sources: {
+    osm: {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '� OpenStreetMap contributors'
+    }
+  },
+  layers: [{ id:'osm', type:'raster', source:'osm', paint:{ 'raster-opacity':0.92 } }]
+};
+
+map = new maplibregl.Map({
+  container: 'map',
+  style: mapStyle,
+  center: [79.0882, 21.1458],
+  zoom: 13,
+  minZoom: 11,
+  maxZoom: 18
+});
+
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+const userEl = document.createElement('div');
+userEl.className = 'user-loc';
+userMarker = new maplibregl.Marker({ element: userEl }).setLngLat([79.0882, 21.1458]).addTo(map);
+
+popup = new maplibregl.Popup({ closeButton: false, maxWidth: '260px', offset: 14 });
+
+map.on('load', () => {
+  recomputeZoneMetrics();
+  addZoneLayer();
+  addIncidentLayer();
+  addHeatLayer();
+  addRouteLayer();
+  refreshAllDataViews();
+  renderEmergencyContacts();
+  initClockAndStatus();
+  fetchCurrentLocation();
+});
+
+function addRoadLayer() {
+  const features = ROAD_EDGES.map(([a, b]) => {
+    const za = ZONE_BY_ID[a];
+    const zb = ZONE_BY_ID[b];
+    return {
+      type: 'Feature',
+      properties: { road: `${za.name}-${zb.name}` },
+      geometry: { type: 'LineString', coordinates: [[za.lng, za.lat], [zb.lng, zb.lat]] }
+    };
+  });
+
+  map.addSource('roads-src', { type: 'geojson', data: { type: 'FeatureCollection', features } });
+  map.addLayer({
+    id: 'roads-casing',
+    type: 'line',
+    source: 'roads-src',
+    paint: { 'line-color':'#0E223D', 'line-width':5, 'line-opacity':0.7 }
+  });
+  map.addLayer({
+    id: 'roads-main',
+    type: 'line',
+    source: 'roads-src',
+    paint: { 'line-color':'#C9D7EE', 'line-width':2.4, 'line-opacity':0.55 }
+  });
+}
+
+function addZoneLayer() {
+  map.addSource('zones-src', { type: 'geojson', data: zoneFeatureCollection() });
+
+  map.addLayer({
+    id: 'zones-glow',
+    type: 'circle',
+    source: 'zones-src',
+    paint: {
+      'circle-radius': ['match', ['get', 'tier'], 'high', 36, 'moderate', 30, 'advisory', 24, 20],
+      'circle-color': ['match', ['get', 'tier'], 'high', '#FF1744', 'moderate', '#FF6D00', 'advisory', '#FFB300', '#00E676'],
+      'circle-opacity': 0.16,
+      'circle-blur': 0.8
+    }
+  });
+
+  map.addLayer({
+    id: 'zones-circle',
+    type: 'circle',
+    source: 'zones-src',
+    paint: {
+      'circle-radius': ['match', ['get', 'tier'], 'high', 24, 'moderate', 20, 'advisory', 17, 15],
+      'circle-color': ['match', ['get', 'tier'], 'high', '#FF1744', 'moderate', '#FF6D00', 'advisory', '#FFB300', '#00E676'],
+      'circle-opacity': ['get', 'opacity'],
+      'circle-stroke-width': 1.4,
+      'circle-stroke-color': ['match', ['get', 'tier'], 'high', '#FF1744', 'moderate', '#FF6D00', 'advisory', '#FFB300', '#00E676'],
+      'circle-stroke-opacity': 0.8
+    }
+  });
+
+  map.addLayer({
+    id: 'zones-label',
+    type: 'symbol',
+    source: 'zones-src',
+    layout: {
+      'text-field': ['get', 'name'],
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+      'text-size': 11,
+      'text-offset': [0, 1.7],
+      'text-anchor': 'top'
+    },
+    paint: {
+      'text-color': '#E2E8F0',
+      'text-halo-color': '#060B14',
+      'text-halo-width': 2
+    }
+  });
+
+  map.on('click', 'zones-circle', e => {
+    const p = e.features[0].properties;
+    popup.setLngLat(e.lngLat).setHTML(`
+      <div class="popup-name">${p.name}</div>
+      <div class="popup-crs"><span class="tier-tag" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44">${p.tier.toUpperCase()}</span> &nbsp; CRS: <span style="color:${p.color};font-weight:600">${Math.round(Number(p.crs) * 100)}</span></div>
+      <div class="popup-row"><span class="popup-key">Total incidents</span><span class="popup-val">${p.incidents}</span></div>
+      <div class="popup-row"><span class="popup-key">Top crime mix</span><span class="popup-val" style="font-size:10px;max-width:130px;text-align:right">${p.top}</span></div>
+      <div class="popup-row"><span class="popup-key">Risk tier</span><span class="popup-val" style="color:${p.color}">${p.tier.toUpperCase()}</span></div>
+      <div style="margin-top:8px;background:#0a1525;border-radius:4px;height:6px;overflow:hidden">
+        <div style="width:${Math.round(Number(p.crs) * 100)}%;height:100%;background:${p.color};border-radius:4px"></div>
+      </div>
+    `).addTo(map);
+  });
+
+  map.on('mouseenter', 'zones-circle', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'zones-circle', () => { map.getCanvas().style.cursor = ''; popup.remove(); });
+}
+
+function addIncidentLayer() {
+  map.addSource('incidents-src', { type: 'geojson', data: incidentFeatureCollection() });
+  map.addLayer({
+    id: 'incident-points',
+    type: 'circle',
+    source: 'incidents-src',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 3, 16, 6],
+      'circle-color': [
+        'match', ['get', 'severity'],
+        'high', '#FF1744',
+        'medium', '#FF6D00',
+        '#FFB300'
+      ],
+      'circle-stroke-color': '#0B1220',
+      'circle-stroke-width': 0.8,
+      'circle-opacity': 0.85
+    }
+  });
+}
+
+function addHeatLayer() {
+  map.addLayer({
+    id: 'heatmap-layer',
+    type: 'heatmap',
+    source: 'incidents-src',
+    paint: {
+      'heatmap-weight': ['interpolate', ['linear'], ['get', 'weight'], 1, 0.2, 3, 1],
+      'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 15, 1.2],
+      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 11, 24, 15, 52],
+      'heatmap-opacity': 0.35,
+      'heatmap-color': [
+        'interpolate', ['linear'], ['heatmap-density'],
+        0, 'rgba(0,0,0,0)',
+        0.2, 'rgba(0,230,118,0.3)',
+        0.4, 'rgba(255,179,0,0.45)',
+        0.6, 'rgba(255,109,0,0.58)',
+        0.8, 'rgba(255,23,68,0.72)',
+        1, 'rgba(255,23,68,0.9)'
+      ]
+    }
+  }, 'zones-glow');
+}
+
+function addRouteLayer() {
+  map.addSource('route-src', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] }
+  });
+
+  map.addLayer({
+    id: 'route-safe',
+    type: 'line',
+    source: 'route-src',
+    filter: ['==', ['get', 'type'], 'safe'],
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#000080', 'line-width': 5, 'line-opacity': 0.95 }
+  });
+
+  map.addLayer({
+    id: 'route-fast',
+    type: 'line',
+    source: 'route-src',
+    filter: ['==', ['get', 'type'], 'fast'],
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#FF6D00', 'line-width': 3, 'line-opacity': 0.72, 'line-dasharray': [3, 2] }
+  });
+
+  map.setLayoutProperty('route-safe', 'visibility', 'none');
+  map.setLayoutProperty('route-fast', 'visibility', 'none');
+}
+
+function zoneFeatureCollection() {
+  const features = ZONES.map(z => ({
+    type: 'Feature',
+    properties: {
+      id: z.id,
+      name: z.name,
+      tier: z.tier,
+      crs: z.crs,
+      incidents: z.incidents,
+      top: z.top,
+      color: TIER_COLOR[z.tier],
+      opacity: TIER_OPACITY[z.tier]
+    },
+    geometry: { type: 'Point', coordinates: [z.lng, z.lat] }
+  }));
+
+  return { type: 'FeatureCollection', features };
+}
+
+function incidentFeatureCollection() {
+  const features = CRIME_DB.map(i => ({
+    type: 'Feature',
+    properties: { severity: i.severity, weight: SEVERITY_WEIGHT[i.severity], zone: i.zoneId },
+    geometry: { type: 'Point', coordinates: [i.lng, i.lat] }
+  }));
+  return { type: 'FeatureCollection', features };
+}
+
+function refreshAllDataViews() {
+  if (map.getSource('zones-src')) {
+    map.getSource('zones-src').setData(zoneFeatureCollection());
+  }
+  if (map.getSource('incidents-src')) {
+    map.getSource('incidents-src').setData(incidentFeatureCollection());
+  }
+  updateZoneCounts();
+  renderIncidents();
+  renderReportHistory();
+  initDashboard();
+}
+
+function recomputeZoneMetrics() {
+  for (const zone of ZONES) {
+    const zoneIncidents = CRIME_DB.filter(i => i.zoneId === zone.id);
+    const severityScore = zoneIncidents.reduce((sum, i) => sum + SEVERITY_WEIGHT[i.severity], 0);
+    const typeCount = {};
+
+    for (const item of zoneIncidents) {
+      typeCount[item.type] = (typeCount[item.type] || 0) + 1;
+    }
+
+    const topType = Object.entries(typeCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(x => x[0])
+      .join(', ');
+
+    zone.incidents = zoneIncidents.length;
+    zone.top = topType || 'No major trend';
+    zone.crs = clamp(zone.baseRisk + zoneIncidents.length * 0.011 + severityScore * 0.004, 0.08, 0.99);
+    zone.tier = tierFromCRS(zone.crs);
+  }
+}
+
+function updateZoneCounts() {
+  const counts = { high: 0, moderate: 0, advisory: 0, safe: 0 };
+  for (const zone of ZONES) counts[zone.tier]++;
+
+  document.getElementById('count-high').textContent = counts.high;
+  document.getElementById('count-mod').textContent = counts.moderate;
+  document.getElementById('count-adv').textContent = counts.advisory;
+  document.getElementById('count-safe').textContent = counts.safe;
+}
+
+function switchTab(tab) {
+  ['route','sos','report','dash'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('ptab-' + t).classList.toggle('active', t === tab);
+  });
+
+  const order = ['route','sos','report','dash'];
+  document.querySelectorAll('.nav-btn').forEach((btn, idx) => {
+    btn.classList.toggle('active', order[idx] === tab);
+  });
+}
+
+function toggleLayer(layer) {
+  if (layer === 'route' && !activeRoute) {
+    showToast('?? Plan route first');
+    return;
+  }
+
+  layerState[layer] = !layerState[layer];
+  document.getElementById('toggle-' + layer).classList.toggle('on', layerState[layer]);
+
+  if (layer === 'zones') {
+    const vis = layerState.zones ? 'visible' : 'none';
+    ['zones-glow', 'zones-circle', 'zones-label'].forEach(id => map.setLayoutProperty(id, 'visibility', vis));
+  }
+  if (layer === 'heat') {
+    map.setLayoutProperty('heatmap-layer', 'visibility', layerState.heat ? 'visible' : 'none');
+    map.setLayoutProperty('incident-points', 'visibility', layerState.heat ? 'visible' : 'none');
+  }
+  if (layer === 'route') {
+    const vis = layerState.route ? 'visible' : 'none';
+    map.setLayoutProperty('route-safe', 'visibility', vis);
+    map.setLayoutProperty('route-fast', 'visibility', vis);
+  }
+}
+
+function planRoute() {
+  const from = document.getElementById('route-from').value;
+  const to = document.getElementById('route-to').value;
+  const mode = document.getElementById('travel-mode').value;
+
+  if (!from || !to) {
+    showToast('⚠️ Select both origin and destination');
+    return;
+  }
+  if (from === to) {
+    showToast('⚠️ Origin and destination cannot be same');
+    return;
+  }
+
+  const fromZone = ZONE_BY_ID[from];
+  const toZone = ZONE_BY_ID[to];
+
+  // Map travel modes to OSRM profiles
+  const profileMap = {
+    walk: 'foot',
+    bike: 'bike',
+    car: 'car',
+    auto: 'car'
+  };
+
+  const profile = profileMap[mode] || 'car';
+  const coordinates = `${fromZone.lng},${fromZone.lat};${toZone.lng},${toZone.lat}`;
+  
+  // Use OSRM for real street-based routing (no API key required)
+  // OSRM routes through actual streets on OpenStreetMap
+  const routeUrl = `https://router.project-osrm.org/route/v1/${profile}/${coordinates}?overview=full&geometries=geojson&steps=true`;
+
+  document.getElementById('route-result').style.display = 'none';
+  showToast('🔄 Computing real street paths on Nagpur map...');
+
+  fetch(routeUrl)
+  .then(r => r.json())
+  .then(data => {
+    if (!data.routes || !data.routes[0]) {
+      showToast('⚠️ No street route found between selected locations');
+      return;
+    }
+
+    const route = data.routes[0];
+    const coordinates = route.geometry.coordinates;
+    
+    // Calculate metrics from OSRM data
+    const distanceKm = route.distance / 1000;
+    const durationMin = route.duration / 60;
+    const avgRisk = ((fromZone.crs + toZone.crs) / 2);
+
+    const safeMetrics = {
+      path: [fromZone.id, toZone.id],
+      coordinates: coordinates,
+      distanceKm: distanceKm,
+      timeMin: durationMin,
+      avgRisk: clamp(avgRisk, 0.08, 0.99)
+    };
+
+    const fastMetrics = { ...safeMetrics };
+
+    setRouteCardData('safe', safeMetrics, true);
+    setRouteCardData('fast', fastMetrics, false);
+
+    document.getElementById('route-result').style.display = 'block';
+    currentRouteSelection = 'safe';
+    document.getElementById('ro-safe').classList.add('selected');
+    document.getElementById('ro-fast').classList.remove('selected');
+
+    map.getSource('route-src').setData({
+      type: 'FeatureCollection',
+      features: [
+        { type:'Feature', properties:{ type:'safe' }, geometry:{ type:'LineString', coordinates: coordinates } },
+        { type:'Feature', properties:{ type:'fast' }, geometry:{ type:'LineString', coordinates: coordinates } }
+      ]
+    });
+
+    map.setLayoutProperty('route-safe', 'visibility', 'visible');
+    map.setLayoutProperty('route-fast', 'visibility', 'none');
+    layerState.route = true;
+    document.getElementById('toggle-route').classList.add('on');
+    selectRoute('safe');
+
+    setRouteStartMarker(coordinates[0]);
+
+    const lngs = coordinates.map(c => c[0]);
+    const lats = coordinates.map(c => c[1]);
+    map.fitBounds(
+      [[Math.min(...lngs) - 0.01, Math.min(...lats) - 0.01], [Math.max(...lngs) + 0.01, Math.max(...lats) + 0.01]],
+      { padding: 80, duration: 850 }
+    );
+
+    activeRoute = { from, to, mode, safePath: safeMetrics, fastPath: fastMetrics };
+    showToast('✅ Real street route found via OSRM (OpenStreetMap)');
+  })
+  .catch(err => {
+    console.error('OSRM error:', err);
+    showToast('⚠️ Street routing unavailable - using zone-based path');
+    
+    // Fallback to synthetic Dijkstra routing
+    const safePath = dijkstra(from, to, mode, 'safe');
+    const fastPath = dijkstra(from, to, mode, 'fast');
+
+    if (!safePath || !fastPath) {
+      showToast('⚠️ No route found');
+      return;
+    }
+
+    setRouteCardData('safe', safePath, true);
+    setRouteCardData('fast', fastPath, false);
+
+    document.getElementById('route-result').style.display = 'block';
+    currentRouteSelection = 'safe';
+    document.getElementById('ro-safe').classList.add('selected');
+    document.getElementById('ro-fast').classList.remove('selected');
+
+    map.getSource('route-src').setData({
+      type: 'FeatureCollection',
+      features: [
+        { type:'Feature', properties:{ type:'safe' }, geometry:{ type:'LineString', coordinates: safePath.coordinates } },
+        { type:'Feature', properties:{ type:'fast' }, geometry:{ type:'LineString', coordinates: fastPath.coordinates } }
+      ]
+    });
+
+    map.setLayoutProperty('route-safe', 'visibility', 'visible');
+    map.setLayoutProperty('route-fast', 'visibility', 'none');
+    layerState.route = true;
+    document.getElementById('toggle-route').classList.add('on');
+    selectRoute('safe');
+
+    setRouteStartMarker(safePath.coordinates[0]);
+
+    const all = safePath.coordinates;
+    const lngs = all.map(c => c[0]);
+    const lats = all.map(c => c[1]);
+    map.fitBounds(
+      [[Math.min(...lngs) - 0.01, Math.min(...lats) - 0.01], [Math.max(...lngs) + 0.01, Math.max(...lats) + 0.01]],
+      { padding: 80, duration: 850 }
+    );
+
+    activeRoute = { from, to, mode, safePath, fastPath };
+  });
+}
+
+
+function calculateRouteMetrics(coordinates, fromZone, toZone, mode) {
+  const speed = TRAVEL_SPEED[mode] || TRAVEL_SPEED.walk;
+  
+  // Calculate total distance from coordinates
+  let distanceKm = 0;
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    const [lng1, lat1] = coordinates[i];
+    const [lng2, lat2] = coordinates[i + 1];
+    distanceKm += haversineKm(lat1, lng1, lat2, lng2);
+  }
+
+  const timeMin = (distanceKm / speed) * 60;
+  const avgRisk = ((fromZone.crs + toZone.crs) / 2);
+
+  return {
+    path: [fromZone.id, toZone.id],
+    coordinates: coordinates,
+    distanceKm: distanceKm,
+    timeMin: timeMin,
+    avgRisk: clamp(avgRisk, 0.08, 0.99)
+  };
+}
+
+function setRouteCardData(kind, routeData, recommended) {
+  const prefix = kind === 'safe' ? 'safe' : 'fast';
+  document.getElementById(prefix + '-time').textContent = `${Math.round(routeData.timeMin)} min`;
+  document.getElementById(prefix + '-dist').textContent = `${routeData.distanceKm.toFixed(1)} km`;
+
+  const riskPct = Math.round(routeData.avgRisk * 100);
+  const riskText = riskPct < 35 ? 'LOW' : (riskPct < 60 ? 'MODERATE' : 'HIGH');
+  document.getElementById(prefix + '-risk').textContent = `${riskText} (${riskPct}%)`;
+  document.getElementById(prefix + '-rbar').style.width = `${Math.max(8, Math.min(100, riskPct))}%`;
+
+  if (kind === 'safe') {
+    document.querySelector('#ro-safe .ro-badge').textContent = recommended ? 'SAFEST' : 'OPTION';
+  }
+  if (kind === 'fast') {
+    document.querySelector('#ro-fast .ro-badge').textContent = 'FASTEST';
+  }
+}
+
+function selectRoute(type) {
+  currentRouteSelection = type;
+  document.getElementById('ro-safe').classList.toggle('selected', type === 'safe');
+  document.getElementById('ro-fast').classList.toggle('selected', type === 'fast');
+
+  if (!activeRoute) return;
+
+  if (type === 'safe') {
+    map.setPaintProperty('route-safe', 'line-width', 6);
+    map.setPaintProperty('route-safe', 'line-opacity', 0.98);
+    map.setPaintProperty('route-fast', 'line-width', 3);
+    map.setPaintProperty('route-fast', 'line-opacity', 0.56);
+  } else {
+    map.setPaintProperty('route-safe', 'line-width', 4);
+    map.setPaintProperty('route-safe', 'line-opacity', 0.72);
+    map.setPaintProperty('route-fast', 'line-width', 5);
+    map.setPaintProperty('route-fast', 'line-opacity', 0.95);
+  }
+}
+
+function clearRoute() {
+  if (map.getSource('route-src')) {
+    map.getSource('route-src').setData({ type: 'FeatureCollection', features: [] });
+    map.setLayoutProperty('route-safe', 'visibility', 'none');
+    map.setLayoutProperty('route-fast', 'visibility', 'none');
+  }
+
+  document.getElementById('route-result').style.display = 'none';
+  document.getElementById('route-from').value = '';
+  document.getElementById('route-to').value = '';
+  layerState.route = false;
+  document.getElementById('toggle-route').classList.remove('on');
+  activeRoute = null;
+
+  if (routeStartMarker) {
+    routeStartMarker.remove();
+    routeStartMarker = null;
+  }
+
+  map.flyTo({ center: [79.0882, 21.1458], zoom: 13, duration: 800 });
+  showToast('Route cleared');
+}
+
+function setRouteStartMarker(startCoord) {
+  if (!startCoord || startCoord.length < 2) return;
+
+  if (routeStartMarker) {
+    routeStartMarker.remove();
+    routeStartMarker = null;
+  }
+
+  const startEl = document.createElement('div');
+  startEl.className = 'route-start-loc';
+  routeStartMarker = new maplibregl.Marker({ element: startEl, anchor: 'bottom' })
+    .setLngLat([startCoord[0], startCoord[1]])
+    .addTo(map);
+}
+
+function startNavigation() {
+  if (!activeRoute) {
+    showToast('?? Plan a route first');
+    return;
+  }
+  const chosen = currentRouteSelection === 'safe' ? 'safest' : 'fastest';
+  showToast(`? ${chosen.toUpperCase()} route navigation started`);
+}
+
+function renderIncidents() {
+  const latest = [...CRIME_DB]
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 8);
+
+  document.getElementById('incident-list').innerHTML = latest.map(i => {
+    const zone = ZONE_BY_ID[i.zoneId];
+    const color = i.severity === 'high' ? '#FF1744' : (i.severity === 'medium' ? '#FF6D00' : '#FFB300');
+    return `
+      <div class="incident-item">
+        <div class="inc-dot" style="background:${color}"></div>
+        <div class="inc-info">
+          <div class="inc-type">${i.type}</div>
+          <div class="inc-loc">?? ${zone.name} � ${i.severity.toUpperCase()}</div>
+        </div>
+        <div class="inc-time">${formatTimeAgo(i.timestamp)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function submitReport() {
+  const typeValue = document.getElementById('crime-type').value;
+  const zoneId = document.getElementById('report-location').value;
+  const severity = document.getElementById('severity').value;
+  const description = document.getElementById('report-desc').value.trim();
+
+  if (!typeValue) {
+    showToast('?? Select incident type');
+    return;
+  }
+
+  const typeMap = {
+    theft: 'Theft',
+    snatching: 'Chain Snatching',
+    assault: 'Assault',
+    robbery: 'Robbery',
+    'vehicle-theft': 'Vehicle Theft',
+    harassment: 'Harassment',
+    suspicious: 'Suspicious Activity',
+    other: 'Other'
+  };
+
+  const zone = ZONE_BY_ID[zoneId];
+  const beforeTier = zone.tier;
+
+  const report = {
+    id: `U-${Date.now()}`,
+    type: typeMap[typeValue] || 'Other',
+    zoneId,
+    severity,
+    description,
+    reporter: 'User',
+    timestamp: Date.now(),
+    lat: zone.lat + randomBetween(-0.0018, 0.0018),
+    lng: zone.lng + randomBetween(-0.0018, 0.0018),
+    source: 'user'
+  };
+
+  CRIME_DB.push(report);
+  USER_REPORTS.unshift(report);
+
+  recomputeZoneMetrics();
+  refreshAllDataViews();
+
+  const afterTier = zone.tier;
+  if (tierRank(afterTier) > tierRank(beforeTier)) {
+    showToast(`?? ${zone.name} moved to ${afterTier.toUpperCase()} due to new incident`);
+  } else {
+    showToast('? Incident report submitted and risk map updated');
+  }
+
+  document.getElementById('crime-type').value = '';
+  document.getElementById('severity').value = 'low';
+  document.getElementById('report-desc').value = '';
+}
+
+function renderReportHistory() {
+  const container = document.getElementById('my-reports');
+  if (!USER_REPORTS.length) {
+    container.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:center;padding:16px">No reports submitted yet</div>';
+    return;
+  }
+
+  container.innerHTML = USER_REPORTS.map(r => {
+    const zoneName = ZONE_BY_ID[r.zoneId].name;
+    const color = r.severity === 'high' ? '#FF1744' : (r.severity === 'medium' ? '#FF6D00' : '#FFB300');
+    const desc = r.description ? `<div class="inc-loc" style="margin-top:2px">?? ${escapeHtml(r.description)}</div>` : '';
+    return `
+      <div class="incident-item slide-in">
+        <div class="inc-dot" style="background:${color}"></div>
+        <div class="inc-info">
+          <div class="inc-type">${r.type}</div>
+          <div class="inc-loc">?? ${zoneName} � ${r.severity.toUpperCase()} � ${formatTimeAgo(r.timestamp)}</div>
+          ${desc}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function refreshZones() {
+  document.getElementById('refresh-btn').innerHTML = '<span class="spin">?</span> Updating';
+
+  const extraIncidents = Math.random() < 0.65 ? 1 : 2;
+  for (let i = 0; i < extraIncidents; i++) {
+    CRIME_DB.push(generateOneSyntheticIncident(`L-${Date.now()}-${i}`));
+  }
+
+  setTimeout(() => {
+    recomputeZoneMetrics();
+    refreshAllDataViews();
+    document.getElementById('refresh-btn').innerHTML = '? Refresh';
+    const conf = (86 + Math.random() * 9).toFixed(1);
+    document.getElementById('ai-conf-val').textContent = `${conf}%`;
+    document.getElementById('ai-upd').textContent = 'just now';
+    showToast(`? Live feed synced: ${extraIncidents} new incident(s)`);
+  }, 900);
+}
+
+function fetchCurrentLocation() {
+  if (!navigator.geolocation) {
+    showToast('Location is not supported in this browser');
+    return;
+  }
+
+  showToast('Fetching your current location...');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, false);
+      map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 800 });
+      startLocationTracking();
+
+      showToast('Current location updated');
+    },
+    err => {
+      console.error('Geolocation error:', err);
+      showToast('Location permission denied or unavailable');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+  );
+}
+
+function startLocationTracking() {
+  if (!navigator.geolocation) return;
+
+  if (userWatchId !== null) {
+    navigator.geolocation.clearWatch(userWatchId);
+  }
+
+  userWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, false);
+    },
+    err => {
+      console.error('Live tracking error:', err);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  );
+}
+
+function updateLocationFromCoords(lat, lng, shouldPanMap) {
+  userLocation = { lat, lng };
+
+  if (userMarker) {
+    userMarker.setLngLat([lng, lat]);
+  }
+
+  if (shouldPanMap) {
+    map.panTo([lng, lat], { duration: 600 });
+  }
+
+  const nearest = nearestZoneForPoint(lng, lat);
+  const coordsEl = document.getElementById('user-coords');
+  const areaEl = document.getElementById('user-area');
+  const riskEl = document.getElementById('user-risk');
+
+  if (coordsEl) {
+    const ns = lat >= 0 ? 'N' : 'S';
+    const ew = lng >= 0 ? 'E' : 'W';
+    coordsEl.textContent = `${Math.abs(lat).toFixed(4)} deg ${ns}, ${Math.abs(lng).toFixed(4)} deg ${ew}`;
+  }
+
+  if (nearest && areaEl && riskEl) {
+    areaEl.textContent = `📍 ${nearest.name}, Nagpur`;
+    riskEl.textContent = `${nearest.tier.toUpperCase()} RISK ZONE`;
+    riskEl.style.color = TIER_COLOR[nearest.tier] || '#FFB300';
+  }
+}
+
+function nearestZoneForPoint(lng, lat) {
+  let nearest = null;
+  let best = Number.POSITIVE_INFINITY;
+
+  for (const zone of ZONES) {
+    const d = haversineKm(lat, lng, zone.lat, zone.lng);
+    if (d < best) {
+      best = d;
+      nearest = zone;
+    }
+  }
+
+  return nearest;
+}
+
+function renderEmergencyContacts() {
+  const container = document.getElementById('emergency-contact-list');
+  if (!container) return;
+
+  container.innerHTML = EMERGENCY_CONTACTS.map(c => {
+    const initials = (c.name || 'U')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part[0].toUpperCase())
+      .join('');
+
+    return `
+      <div class="contact-card">
+        <div class="contact-avatar">${initials || 'U'}</div>
+        <div>
+          <div class="contact-name">${escapeHtml(c.name)}</div>
+          <div class="contact-rel">${escapeHtml(c.relation || 'CONTACT')} · ${escapeHtml(c.phone)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function addEmergencyContactPrompt() {
+  const name = prompt('Enter emergency contact name:');
+  if (!name || !name.trim()) {
+    showToast('Contact name is required');
+    return;
+  }
+
+  const phone = prompt('Enter emergency contact number:');
+  if (!phone || !phone.trim()) {
+    showToast('Contact number is required');
+    return;
+  }
+
+  const cleanedPhone = normalizePhone(phone.trim());
+  if (cleanedPhone.length < 8) {
+    showToast('Enter a valid contact number');
+    return;
+  }
+
+  EMERGENCY_CONTACTS.push({
+    name: name.trim(),
+    relation: 'CUSTOM',
+    phone: cleanedPhone
+  });
+
+  renderEmergencyContacts();
+  showToast('Emergency contact added and linked to SOS');
+}
+
+function triggerSOS() {
+  if (sosTimer) return;
+
+  document.getElementById('sos-text').style.display = 'none';
+  document.getElementById('sos-countdown').style.display = 'block';
+  sosSeconds = 5;
+  document.getElementById('sos-countdown').textContent = sosSeconds;
+
+  sosTimer = setInterval(() => {
+    sosSeconds -= 1;
+    if (sosSeconds <= 0) {
+      clearInterval(sosTimer);
+      sosTimer = null;
+      fireSOS();
+      return;
+    }
+    document.getElementById('sos-countdown').textContent = sosSeconds;
+  }, 1000);
+}
+
+function fireSOS() {
+  const user = {
+    name: 'Aditi Kulkarni',
+    phone: '+91 90000 11223',
+    bloodGroup: 'O+',
+    emergencyId: `APSAS-${Math.floor(100000 + Math.random() * 900000)}`
+  };
+
+  const loc = { lat: userLocation.lat, lng: userLocation.lng };
+  const nearestPS = nearestPoliceStation(loc.lng, loc.lat);
+
+  playAlarmTone();
+
+  const smsBody = buildSOSMessage(user, loc, nearestPS);
+
+  document.getElementById('sos-normal').style.display = 'none';
+  document.getElementById('sos-sent').style.display = 'block';
+  document.getElementById('sos-sent-sub').textContent = `SMS ready for ${EMERGENCY_CONTACTS.length} contact(s). Tap links below to send.`;
+
+  const contactsHtml = EMERGENCY_CONTACTS.map(c => {
+    const safePhone = escapeHtml(c.phone);
+    const safeName = escapeHtml(c.name);
+    const safeRel = escapeHtml(c.relation);
+    return `
+      <div style="margin-bottom:6px">
+        <button class="btn btn-outline" style="margin-top:0;padding:7px 10px;text-align:left" onclick="sendSmsToContact('${safePhone}', '${safeName}', '${safeRel}')">Send SMS to ${safeName} (${safeRel})</button>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('sos-sent-details').innerHTML = `
+    ${contactsHtml}
+    <div style="color:var(--green);margin-bottom:8px">? ${nearestPS.name} - emergency desk pinged</div>
+    <div style="color:var(--text-dim)">?? ${user.name} � ${user.phone} � ${user.bloodGroup}</div>
+    <div style="color:var(--text-dim)">?? Alert ID: ${user.emergencyId}</div>
+    <div style="color:var(--text-dim)">?? Live location: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</div>
+    <div style="color:var(--text-dim)">?? Nearest police: ${nearestPS.name} (${nearestPS.distanceKm.toFixed(2)} km)</div>
+    <div style="color:var(--text-dim)">?? Alarm signal activated</div>
+    <div style="color:var(--text-dim);margin-top:8px">Note: Browser cannot send SMS silently. On mobile, tap button to open SMS app and press Send. On desktop, open this page on your phone.</div>
+  `;
+
+  openFirstSmsComposer(smsBody);
+  showToast('SOS ready. SMS composer opened for first contact.');
+}
+
+function buildSOSMessage(user, loc, nearestPS) {
+  return [
+    'EMERGENCY SOS ALERT',
+    `Name: ${user.name}`,
+    `Phone: ${user.phone}`,
+    `Blood Group: ${user.bloodGroup}`,
+    `Alert ID: ${user.emergencyId}`,
+    `Live Location: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`,
+    `Nearest Police: ${nearestPS.name} (${nearestPS.distanceKm.toFixed(2)} km)`,
+    'Please contact immediately.'
+  ].join('\n');
+}
+
+function normalizePhone(phone) {
+  return String(phone || '').replace(/[^\d+]/g, '');
+}
+
+function buildSmsLink(phone, body) {
+  const number = normalizePhone(phone);
+  const encodedBody = encodeURIComponent(body);
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const sep = isIOS ? '&' : '?';
+  return `sms:${number}${sep}body=${encodedBody}`;
+}
+
+function sendSmsToContact(phone, name, relation) {
+  const user = {
+    name: 'Aditi Kulkarni',
+    phone: '+91 90000 11223',
+    bloodGroup: 'O+',
+    emergencyId: `APSAS-${Math.floor(100000 + Math.random() * 900000)}`
+  };
+  const loc = { lat: userLocation.lat, lng: userLocation.lng };
+  const nearestPS = nearestPoliceStation(loc.lng, loc.lat);
+  const smsBody = buildSOSMessage(user, loc, nearestPS);
+  const smsLink = buildSmsLink(phone, smsBody);
+
+  window.location.href = smsLink;
+  showToast(`Opening SMS app for ${name} (${relation})`);
+}
+
+function openFirstSmsComposer(smsBody) {
+  if (!EMERGENCY_CONTACTS.length) return;
+  const first = EMERGENCY_CONTACTS[0];
+  const smsLink = buildSmsLink(first.phone, smsBody);
+  setTimeout(() => {
+    window.location.href = smsLink;
+  }, 120);
+}
+
+function resetSOS() {
+  if (sosTimer) {
+    clearInterval(sosTimer);
+    sosTimer = null;
+  }
+  document.getElementById('sos-normal').style.display = 'block';
+  document.getElementById('sos-sent').style.display = 'none';
+  document.getElementById('sos-text').style.display = 'block';
+  document.getElementById('sos-countdown').style.display = 'none';
+  document.getElementById('sos-countdown').textContent = '5';
+}
+
+document.getElementById('sos-btn').addEventListener('dblclick', () => {
+  if (!sosTimer) return;
+  clearInterval(sosTimer);
+  sosTimer = null;
+  document.getElementById('sos-text').style.display = 'block';
+  document.getElementById('sos-countdown').style.display = 'none';
+  showToast('SOS cancelled');
+});
+
+function initDashboard() {
+  const counts = { high: 0, moderate: 0, advisory: 0, safe: 0 };
+  let crsSum = 0;
+
+  for (const zone of ZONES) {
+    counts[zone.tier] += 1;
+    crsSum += zone.crs;
+  }
+
+  const avgCRSPercent = Math.round((crsSum / ZONES.length) * 100);
+  document.getElementById('high-zones-count').textContent = counts.high;
+  document.getElementById('safe-zones-count').textContent = counts.safe;
+  document.getElementById('total-crimes').textContent = CRIME_DB.length;
+  document.getElementById('avg-crs').textContent = avgCRSPercent;
+
+  const sorted = [...ZONES].sort((a, b) => b.crs - a.crs);
+  const max = sorted[0].crs;
+  const min = sorted[sorted.length - 1].crs;
+  const span = Math.max(0.0001, max - min);
+
+  document.getElementById('patrol-list').innerHTML = sorted.slice(0, 7).map((z, i) => {
+    const pct = Math.round(((z.crs - min) / span) * 100);
+    return `
+      <div class="patrol-item">
+        <div class="patrol-rank">#${i + 1}</div>
+        <div><div class="patrol-name">${z.name}</div><div style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">${z.incidents} incidents � ${z.tier.toUpperCase()}</div></div>
+        <div class="patrol-score" style="color:${TIER_COLOR[z.tier]}">${pct}%</div>
+      </div>
+    `;
+  }).join('');
+
+  const totalZones = ZONES.length;
+  const rows = [
+    { key:'high', label:'HIGH RISK', color:'var(--red)' },
+    { key:'moderate', label:'MODERATE', color:'var(--orange)' },
+    { key:'advisory', label:'ADVERSE', color:'var(--yellow)' },
+    { key:'safe', label:'SAFE', color:'var(--green)' }
+  ];
+
+  document.getElementById('risk-dist').innerHTML = rows.map(r => {
+    const pct = Math.round((counts[r.key] / totalZones) * 100);
+    return `
+      <div class="zone-bar-item">
+        <div class="zb-head"><span style="color:${r.color}">${r.label}</span><span style="font-family:var(--mono)">${counts[r.key]} zones (${pct}%)</span></div>
+        <div style="background:#0a1525;border-radius:4px;height:8px;overflow:hidden">
+          <div class="zb-fill" style="width:${pct}%;background:${r.color}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.time-bar').forEach(bar => {
+    const h = Number(bar.getAttribute('data-h'));
+    const color = h > 70 ? '#FF1744' : (h > 40 ? '#FF6D00' : '#FFB300');
+    bar.style.height = `${h}%`;
+    bar.style.background = `linear-gradient(to top, ${color}AA, ${color}44)`;
+  });
+}
+
+function initClockAndStatus() {
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  setInterval(() => {
+    const val = (82 + Math.random() * 12).toFixed(1);
+    document.getElementById('ai-bar').style.width = `${val}%`;
+  }, 8000);
+
+  setInterval(() => {
+    const mins = Math.floor(Math.random() * 5) + 1;
+    document.getElementById('ai-upd').textContent = `${mins} min ago`;
+  }, 60000);
+}
+
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('live-clock').textContent = `${h}:${m}:${s}`;
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('live-date').textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+function dijkstra(start, end, mode, objective) {
+  const speed = TRAVEL_SPEED[mode] || TRAVEL_SPEED.walk;
+  const dist = {};
+  const prev = {};
+  const unvisited = new Set(Object.keys(GRAPH));
+
+  for (const key of unvisited) {
+    dist[key] = Number.POSITIVE_INFINITY;
+    prev[key] = null;
+  }
+  dist[start] = 0;
+
+  while (unvisited.size) {
+    let current = null;
+    let best = Number.POSITIVE_INFINITY;
+
+    for (const node of unvisited) {
+      if (dist[node] < best) {
+        best = dist[node];
+        current = node;
+      }
+    }
+
+    if (!current || best === Number.POSITIVE_INFINITY) break;
+    unvisited.delete(current);
+    if (current === end) break;
+
+    for (const nb of GRAPH[current]) {
+      if (!unvisited.has(nb)) continue;
+
+      const a = ZONE_BY_ID[current];
+      const b = ZONE_BY_ID[nb];
+      const edgeDistance = haversineKm(a.lat, a.lng, b.lat, b.lng) * 1.18;
+      const edgeTime = (edgeDistance / speed) * 60;
+      const edgeRisk = ((a.crs + b.crs) / 2) * 100;
+      const edgeWeight = objective === 'safe'
+        ? edgeTime + edgeRisk * 0.56
+        : edgeTime + edgeRisk * 0.18;
+
+      const next = dist[current] + edgeWeight;
+      if (next < dist[nb]) {
+        dist[nb] = next;
+        prev[nb] = current;
+      }
+    }
+  }
+
+  if (!prev[end] && start !== end) return null;
+
+  const path = [];
+  let node = end;
+  while (node) {
+    path.unshift(node);
+    node = prev[node];
+  }
+
+  const coords = path.map(id => [ZONE_BY_ID[id].lng, ZONE_BY_ID[id].lat]);
+
+  let distanceKm = 0;
+  let timeMin = 0;
+  let riskWeighted = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = ZONE_BY_ID[path[i]];
+    const b = ZONE_BY_ID[path[i + 1]];
+    const d = haversineKm(a.lat, a.lng, b.lat, b.lng) * 1.18;
+    distanceKm += d;
+    timeMin += (d / speed) * 60;
+    riskWeighted += (((a.crs + b.crs) / 2) * d);
+  }
+
+  const avgRisk = distanceKm > 0 ? riskWeighted / distanceKm : ZONE_BY_ID[start].crs;
+  return { path, coordinates: coords, distanceKm, timeMin, avgRisk: clamp(avgRisk, 0.08, 0.99) };
+}
+
+function generateSyntheticCrimeEntries(count) {
+  const rows = [];
+  for (let i = 0; i < count; i++) {
+    rows.push(generateOneSyntheticIncident(`S-${i + 1}`));
+  }
+  return rows;
+}
+
+function generateOneSyntheticIncident(id) {
+  const zone = weightedZonePick();
+  const severity = pickSeverity(zone.baseRisk);
+  const type = CRIME_TYPES[Math.floor(Math.random() * CRIME_TYPES.length)];
+  const offsetHours = randomBetween(0.2, 72);
+
+  return {
+    id,
+    type,
+    zoneId: zone.id,
+    severity,
+    reporter: Math.random() < 0.65 ? 'citizen' : 'patrol',
+    source: 'synthetic',
+    description: 'Synthetic baseline training entry',
+    timestamp: Date.now() - Math.floor(offsetHours * 3600 * 1000),
+    lat: zone.lat + randomBetween(-0.0021, 0.0021),
+    lng: zone.lng + randomBetween(-0.0021, 0.0021)
+  };
+}
+
+function weightedZonePick() {
+  const bag = [];
+  for (const z of ZONES) {
+    const w = Math.max(1, Math.round(z.baseRisk * 10));
+    for (let i = 0; i < w; i++) bag.push(z);
+  }
+  return bag[Math.floor(Math.random() * bag.length)];
+}
+
+function pickSeverity(baseRisk) {
+  const x = Math.random();
+  if (baseRisk > 0.5) return x < 0.42 ? 'high' : (x < 0.82 ? 'medium' : 'low');
+  if (baseRisk > 0.3) return x < 0.18 ? 'high' : (x < 0.66 ? 'medium' : 'low');
+  return x < 0.08 ? 'high' : (x < 0.42 ? 'medium' : 'low');
+}
+
+function tierFromCRS(crs) {
+  if (crs >= 0.75) return 'high';
+  if (crs >= 0.55) return 'moderate';
+  if (crs >= 0.35) return 'advisory';
+  return 'safe';
+}
+
+function tierRank(tier) {
+  return { safe: 0, advisory: 1, moderate: 2, high: 3 }[tier] ?? 0;
+}
+
+function nearestPoliceStation(lng, lat) {
+  let best = null;
+  for (const ps of POLICE_STATIONS) {
+    const d = haversineKm(lat, lng, ps.lat, ps.lng);
+    if (!best || d < best.distanceKm) {
+      best = { ...ps, distanceKm: d };
+    }
+  }
+  return best;
+}
+
+function buildGraph(edges) {
+  const graph = {};
+  for (const z of ZONES) graph[z.id] = [];
+  for (const [a, b] of edges) {
+    if (graph[a] && graph[b]) {
+      graph[a].push(b);
+      graph[b].push(a);
+    }
+  }
+  return graph;
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const toRad = d => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function formatTimeAgo(ts) {
+  const mins = Math.max(1, Math.floor((Date.now() - ts) / 60000));
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day ago`;
+}
+
+function playAlarmTone() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+
+    const ctx = new Ctx();
+    for (let i = 0; i < 3; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 700 + i * 120;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const start = ctx.currentTime + i * 0.25;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
+      osc.start(start);
+      osc.stop(start + 0.22);
+    }
+  } catch (_) {
+    // Non-blocking fallback in browsers that disallow WebAudio autoplay.
+  }
+}
+
+function escapeHtml(text) {
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
+
+
