@@ -106,21 +106,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   position:absolute;top:14px;left:14px;right:14px;z-index:5;
   display:flex;align-items:center;gap:10px;
 }
-.search-box{
-  flex:1;background:rgba(8,14,28,0.92);border:1px solid var(--border);
-  border-radius:8px;padding:9px 14px;color:var(--text-lt);
-  font-family:var(--body);font-size:13px;outline:none;
-  backdrop-filter:blur(10px);
-}
-.search-box::placeholder{color:var(--text-dim);}
-.tb-chip{
-  background:rgba(8,14,28,0.92);border:1px solid var(--border);
-  border-radius:8px;padding:9px 14px;font-family:var(--mono);
-  font-size:11px;color:var(--text);white-space:nowrap;backdrop-filter:blur(10px);
-  cursor:pointer;transition:all 0.2s;
-}
-.tb-chip:hover{border-color:var(--blue);color:var(--blue-lt);}
-.tb-chip.alert-chip{border-color:rgba(255,23,68,0.5);color:var(--red);animation:blink 2s infinite;}
+
 
 /* ── MAP LEGEND ── */
 #map-legend{
@@ -424,10 +410,6 @@ select option{background:var(--card);}
   <div id="map"></div>
 
   <div id="top-bar">
-    <input class="search-box" type="text" placeholder="🔍  Search area in Nagpur..."/>
-    <div class="tb-chip">👤 Sitabuldi</div>
-    <div class="tb-chip alert-chip">🚨 3 Alerts</div>
-    <div class="tb-chip" id="refresh-btn" onclick="refreshZones()">↻ Refresh</div>
   </div>
 
   <div id="map-legend">
@@ -1602,24 +1584,7 @@ function renderReportHistory() {
   }).join('');
 }
 
-function refreshZones() {
-  document.getElementById('refresh-btn').innerHTML = '<span class="spin">?</span> Updating';
 
-  const extraIncidents = Math.random() < 0.65 ? 1 : 2;
-  for (let i = 0; i < extraIncidents; i++) {
-    CRIME_DB.push(generateOneSyntheticIncident(`L-${Date.now()}-${i}`));
-  }
-
-  setTimeout(() => {
-    recomputeZoneMetrics();
-    refreshAllDataViews();
-    document.getElementById('refresh-btn').innerHTML = '? Refresh';
-    const conf = (86 + Math.random() * 9).toFixed(1);
-    document.getElementById('ai-conf-val').textContent = `${conf}%`;
-    document.getElementById('ai-upd').textContent = 'just now';
-    showToast(`? Live feed synced: ${extraIncidents} new incident(s)`);
-  }, 900);
-}
 
 async function fetchCurrentLocation() {
   console.log('[LOC] Requesting system location...');
