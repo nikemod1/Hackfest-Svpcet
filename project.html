@@ -1622,76 +1622,66 @@ function refreshZones() {
 }
 
 async function fetchCurrentLocation() {
-  if (!window.isSecureContext) {
-    const ok = await fetchApproxLocationByIP();
-    showToast(ok
-      ? 'Secure GPS unavailable here. Using approximate network location.'
-      : 'Location unavailable. Open app on https/localhost and allow location.');
+  showToast('Fetching your location...');
+
+  // For laptops: try IP-based geolocation first (faster, more reliable)
+  const ipOk = await fetchApproxLocationByIP();
+  if (ipOk) {
+    showToast('Location fetched via network');
     return;
   }
 
+  // If IP geolocation fails, try browser GPS (for phones)
   if (!navigator.geolocation) {
-    const ok = await fetchApproxLocationByIP();
-    showToast(ok ? 'GPS not supported. Using approximate network location.' : 'Location not supported in this browser.');
+    showToast('Location services not available');
     return;
   }
-
-  showToast('Fetching your current location...');
 
   const applyGpsLocation = pos => {
     updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, false);
     map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 800 });
     startLocationTracking();
-    showToast('Current location updated');
+    showToast('GPS location updated');
   };
 
   navigator.geolocation.getCurrentPosition(
     applyGpsLocation,
-    _errHigh => {
-      // Retry once with relaxed options for browsers/devices that reject high-accuracy requests.
-      navigator.geolocation.getCurrentPosition(
-        applyGpsLocation,
-        async errLow => {
-          console.error('Geolocation error:', errLow);
-          const ok = await fetchApproxLocationByIP();
-          showToast(ok
-            ? 'GPS unavailable/blocked. Using approximate network location.'
-            : 'Location permission denied or unavailable.');
-        },
-        { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 }
-      );
+    err => {
+      console.error('GPS error:', err);
+      showToast('GPS unavailable. Check browser permissions.');
     },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
   );
 }
 
 async function fetchApproxLocationByIP() {
-  try {
-    const res = await fetch('https://ipapi.co/json/');
-    const data = await res.json();
-    const lat = Number(data?.latitude);
-    const lng = Number(data?.longitude);
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      updateLocationFromCoords(lat, lng, false);
-      map.flyTo({ center: [lng, lat], zoom: 12, duration: 700 });
-      return true;
-    }
-  } catch (_) {
-    // fall through to secondary provider
-  }
+  // Try multiple IP geolocation services with timeouts
+  const services = [
+    { url: 'https://ipapi.co/json/', extract: d => ({ lat: d.latitude, lng: d.longitude }) },
+    { url: 'https://ipwho.is/', extract: d => ({ lat: d.latitude, lng: d.longitude }) },
+    { url: 'https://ipinfo.io/json', extract: d => { const [lat, lng] = (d.loc || '').split(','); return { lat: parseFloat(lat), lng: parseFloat(lng) }; } }
+  ];
 
-  try {
-    const res2 = await fetch('https://ipwho.is/');
-    const data2 = await res2.json();
-    const lat2 = Number(data2?.latitude);
-    const lng2 = Number(data2?.longitude);
-    if (Number.isFinite(lat2) && Number.isFinite(lng2)) {
-      updateLocationFromCoords(lat2, lng2, false);
-      map.flyTo({ center: [lng2, lat2], zoom: 12, duration: 700 });
-      return true;
+  for (const svc of services) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(svc.url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) continue;
+      const data = await res.json();
+      const { lat, lng } = svc.extract(data);
+      
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        updateLocationFromCoords(lat, lng, false);
+        map.flyTo({ center: [lng, lat], zoom: 12, duration: 700 });
+        console.log(`Location from ${svc.url}: ${lat}, ${lng}`);
+        return true;
+      }
+    } catch (_) {
+      // Continue to next service
     }
-  } catch (err) {
-    console.error('Approx location fallback failed:', err);
   }
 
   return false;
