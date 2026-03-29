@@ -4,6 +4,9 @@ node_modules/
 # local helper scripts
 *.py
 
+# local secrets
+.env
+
 # OS/editor
 .DS_Store
 Thumbs.db

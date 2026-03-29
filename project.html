@@ -461,30 +461,32 @@ select option{background:var(--card);}
       <div class="card-title">🗺️ Safe Route Planner</div>
       <div class="card-sub">AI-powered routing avoids high-risk zones</div>
       <label class="form-label">ORIGIN</label>
-      <select id="route-from">
-        <option value="">Select starting area...</option>
-        <option value="civil-lines">Civil Lines (Safe)</option>
-        <option value="dharampeth">Dharampeth (Safe)</option>
-        <option value="ramdaspeth">Ramdaspeth (Safe)</option>
-        <option value="sitabuldi">Sitabuldi (Moderate)</option>
-        <option value="sadar">Sadar (Moderate)</option>
-        <option value="shankar-ngr">Shankar Nagar (Safe)</option>
-        <option value="itwari">Itwari (High Risk)</option>
-        <option value="gandhibagh">Gandhibagh (High Risk)</option>
-      </select>
+      <input id="route-from" list="nagpur-areas" type="text" placeholder="Type any Nagpur area or address..."/>
       <label class="form-label">DESTINATION</label>
-      <select id="route-to">
-        <option value="">Select destination...</option>
-        <option value="civil-lines">Civil Lines (Safe)</option>
-        <option value="dharampeth">Dharampeth (Safe)</option>
-        <option value="ramdaspeth">Ramdaspeth (Safe)</option>
-        <option value="sitabuldi">Sitabuldi (Moderate)</option>
-        <option value="sadar">Sadar (Moderate)</option>
-        <option value="bajaj-nagar">Bajaj Nagar (Safe)</option>
-        <option value="itwari">Itwari (High Risk)</option>
-        <option value="wardha-road">Wardha Road (Advisory)</option>
-        <option value="nandanvan">Nandanvan (Advisory)</option>
-      </select>
+      <input id="route-to" list="nagpur-areas" type="text" placeholder="Type destination area or address..."/>
+      <datalist id="nagpur-areas">
+        <option value="Sitabuldi"></option>
+        <option value="Sadar"></option>
+        <option value="Dharampeth"></option>
+        <option value="Ramdaspeth"></option>
+        <option value="Civil Lines"></option>
+        <option value="Itwari"></option>
+        <option value="Jaripatka"></option>
+        <option value="Mankapur"></option>
+        <option value="Lakadganj"></option>
+        <option value="Nandanvan"></option>
+        <option value="Pratap Nagar"></option>
+        <option value="Shankar Nagar"></option>
+        <option value="Bajaj Nagar"></option>
+        <option value="Wardha Road"></option>
+        <option value="Wadi"></option>
+        <option value="Manewada"></option>
+        <option value="Trimurti Nagar"></option>
+        <option value="Ajni"></option>
+        <option value="Hingna"></option>
+        <option value="Kamptee Road"></option>
+      </datalist>
+      <div class="card-sub" style="margin-top:-2px;margin-bottom:8px">You can search any Nagpur locality; results are geocoded on live map data.</div>
       <label class="form-label">TRAVEL MODE</label>
       <select id="travel-mode">
         <option value="walk">🚶 Walking</option>
@@ -545,7 +547,7 @@ select option{background:var(--card);}
           <span id="sos-countdown"></span>
         </button>
         <div style="text-align:center;margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--text-dim)">
-          Tap and hold for 2 seconds · 5 second cancel window
+          One tap sends emergency alert instantly
         </div>
       </div>
 
@@ -737,17 +739,17 @@ select option{background:var(--card);}
 // Dynamic city safety model with synthetic incidents, Dijkstra routing, SOS flow, and live dashboard updates.
 const ZONES = [
   { id:'itwari', name:'Itwari', lng:79.1080, lat:21.1580, baseRisk:0.62, crs:0.62, tier:'high', incidents:0, top:'-' },
-  { id:'gandhibagh', name:'Gandhibagh', lng:79.0980, lat:21.1495, baseRisk:0.60, crs:0.60, tier:'high', incidents:0, top:'-' },
+  { id:'gandhibagh', name:'Gandhi Bagh', lng:79.0980, lat:21.1495, baseRisk:0.60, crs:0.60, tier:'high', incidents:0, top:'-' },
   { id:'jaripatka', name:'Jaripatka', lng:79.1180, lat:21.1440, baseRisk:0.58, crs:0.58, tier:'high', incidents:0, top:'-' },
-  { id:'cotton-mkt', name:'Cotton Market', lng:79.0940, lat:21.1640, baseRisk:0.57, crs:0.57, tier:'high', incidents:0, top:'-' },
+  { id:'cotton-mkt', name:'Cotton Market Area', lng:79.0940, lat:21.1640, baseRisk:0.57, crs:0.57, tier:'high', incidents:0, top:'-' },
   { id:'sadar', name:'Sadar', lng:79.0960, lat:21.1390, baseRisk:0.45, crs:0.45, tier:'moderate', incidents:0, top:'-' },
   { id:'sitabuldi', name:'Sitabuldi', lng:79.0882, lat:21.1458, baseRisk:0.43, crs:0.43, tier:'moderate', incidents:0, top:'-' },
   { id:'kamptee-rd', name:'Kamptee Road', lng:79.1150, lat:21.1700, baseRisk:0.44, crs:0.44, tier:'moderate', incidents:0, top:'-' },
   { id:'mankapur', name:'Mankapur', lng:79.0640, lat:21.1590, baseRisk:0.41, crs:0.41, tier:'moderate', incidents:0, top:'-' },
-  { id:'tehsil', name:'Tehsil', lng:79.0850, lat:21.1610, baseRisk:0.44, crs:0.44, tier:'moderate', incidents:0, top:'-' },
+  { id:'tehsil', name:'Mahal Tehsil', lng:79.0850, lat:21.1610, baseRisk:0.44, crs:0.44, tier:'moderate', incidents:0, top:'-' },
   { id:'lakadganj', name:'Lakadganj', lng:79.0720, lat:21.1540, baseRisk:0.30, crs:0.30, tier:'advisory', incidents:0, top:'-' },
   { id:'nandanvan', name:'Nandanvan', lng:79.1050, lat:21.1240, baseRisk:0.31, crs:0.31, tier:'advisory', incidents:0, top:'-' },
-  { id:'wardha-road', name:'Wardha Road', lng:79.1280, lat:21.1100, baseRisk:0.28, crs:0.28, tier:'advisory', incidents:0, top:'-' },
+  { id:'wardha-road', name:'Wardha Road Corridor', lng:79.1280, lat:21.1100, baseRisk:0.28, crs:0.28, tier:'advisory', incidents:0, top:'-' },
   { id:'pratap-ngr', name:'Pratap Nagar', lng:79.0590, lat:21.1440, baseRisk:0.29, crs:0.29, tier:'advisory', incidents:0, top:'-' },
   { id:'civil-lines', name:'Civil Lines', lng:79.0880, lat:21.1510, baseRisk:0.16, crs:0.16, tier:'safe', incidents:0, top:'-' },
   { id:'dharampeth', name:'Dharampeth', lng:79.0671, lat:21.1315, baseRisk:0.14, crs:0.14, tier:'safe', incidents:0, top:'-' },
@@ -755,7 +757,7 @@ const ZONES = [
   { id:'bajaj-nagar', name:'Bajaj Nagar', lng:79.0590, lat:21.1140, baseRisk:0.13, crs:0.13, tier:'safe', incidents:0, top:'-' },
   { id:'shankar-ngr', name:'Shankar Nagar', lng:79.0740, lat:21.1390, baseRisk:0.17, crs:0.17, tier:'safe', incidents:0, top:'-' },
   { id:'hingna', name:'Hingna', lng:79.0390, lat:21.1090, baseRisk:0.16, crs:0.16, tier:'safe', incidents:0, top:'-' },
-  { id:'wardhaman', name:'Wardhaman Ngr', lng:79.1190, lat:21.1290, baseRisk:0.22, crs:0.22, tier:'safe', incidents:0, top:'-' }
+  { id:'wardhaman', name:'Wardhaman Nagar', lng:79.1190, lat:21.1290, baseRisk:0.22, crs:0.22, tier:'safe', incidents:0, top:'-' }
 ];
 
 const ZONE_BY_ID = Object.fromEntries(ZONES.map(z => [z.id, z]));
@@ -774,6 +776,17 @@ let EMERGENCY_CONTACTS = [
   { name:'Rahul Deshpande', relation:'BROTHER', phone:'+91 87654 32109' },
   { name:'Sarika Patil', relation:'FRIEND', phone:'+91 76543 21098' }
 ];
+
+// SMS provider config. Backend provider sends real SMS via server-side Twilio credentials.
+const SMS_CONFIG = {
+  enabled: true,
+  provider: 'backend',
+  backendUrl: 'http://localhost:3001/api/send-sms',
+  backendBulkUrl: 'http://localhost:3001/api/send-sos-bulk',
+  textbeltApiKey: 'textbelt'
+};
+
+const EMERGENCY_CONTACTS_STORAGE_KEY = 'apsas.emergencyContacts.v1';
 
 const POLICE_STATIONS = [
   { name:'Sitabuldi Police Station', lng:79.0891, lat:21.1452 },
@@ -808,8 +821,10 @@ let userWatchId = null;
 let layerState = { zones: true, heat: true, route: false };
 let sosTimer = null;
 let sosSeconds = 5;
+let sosDispatching = false;
 let activeRoute = null;
 let currentRouteSelection = 'safe';
+let smsBackendStatus = { ok: false, configured: false, provider: 'unknown', missing: {} };
 
 const mapStyle = {
   version: 8,
@@ -842,6 +857,7 @@ userMarker = new maplibregl.Marker({ element: userEl }).setLngLat([79.0882, 21.1
 popup = new maplibregl.Popup({ closeButton: false, maxWidth: '260px', offset: 14 });
 
 map.on('load', () => {
+  loadEmergencyContactsFromStorage();
   recomputeZoneMetrics();
   addZoneLayer();
   addIncidentLayer();
@@ -851,7 +867,19 @@ map.on('load', () => {
   renderEmergencyContacts();
   initClockAndStatus();
   fetchCurrentLocation();
+  checkSmsBackendStatus();
 });
+
+async function checkSmsBackendStatus() {
+  try {
+    const res = await fetch('http://localhost:3001/health');
+    const data = await res.json();
+    smsBackendStatus = data || smsBackendStatus;
+  } catch (err) {
+    smsBackendStatus = { ok: false, configured: false, provider: 'offline', missing: {} };
+    console.error('SMS backend health check failed:', err);
+  }
+}
 
 function addRoadLayer() {
   const features = ROAD_EDGES.map(([a, b]) => {
@@ -1126,22 +1154,100 @@ function toggleLayer(layer) {
   }
 }
 
-function planRoute() {
+function getZoneByIdOrName(inputValue) {
+  if (!inputValue) return null;
+  const raw = String(inputValue).trim().toLowerCase();
+  if (!raw) return null;
+
+  if (ZONE_BY_ID[raw]) return ZONE_BY_ID[raw];
+
+  const normalized = raw.replace(/[^a-z0-9]/g, '');
+  for (const zone of ZONES) {
+    const idNorm = zone.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const nameNorm = zone.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (normalized === idNorm || normalized === nameNorm) return zone;
+  }
+
+  return null;
+}
+
+async function resolveRoutePoint(inputValue) {
+  const zone = getZoneByIdOrName(inputValue);
+  if (zone) {
+    return {
+      id: zone.id,
+      label: zone.name,
+      lng: zone.lng,
+      lat: zone.lat,
+      crs: zone.crs
+    };
+  }
+
+  const query = `${String(inputValue).trim()}, Nagpur, Maharashtra, India`;
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (!Array.isArray(data) || !data.length) {
+    throw new Error('Location not found');
+  }
+
+  const top = data[0];
+  const lat = Number(top.lat);
+  const lng = Number(top.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new Error('Invalid location coordinates');
+  }
+
+  const nearest = nearestZoneForPoint(lng, lat);
+  const shortName = String(top.display_name || inputValue)
+    .split(',')
+    .slice(0, 2)
+    .join(',')
+    .trim();
+
+  return {
+    id: null,
+    label: shortName || String(inputValue).trim(),
+    lng,
+    lat,
+    crs: nearest ? nearest.crs : 0.35
+  };
+}
+
+async function planRoute() {
   const from = document.getElementById('route-from').value;
   const to = document.getElementById('route-to').value;
   const mode = document.getElementById('travel-mode').value;
 
   if (!from || !to) {
-    showToast('⚠️ Select both origin and destination');
+    showToast('⚠️ Enter both origin and destination');
     return;
   }
-  if (from === to) {
+  if (from.trim().toLowerCase() === to.trim().toLowerCase()) {
     showToast('⚠️ Origin and destination cannot be same');
     return;
   }
 
-  const fromZone = ZONE_BY_ID[from];
-  const toZone = ZONE_BY_ID[to];
+  document.getElementById('route-result').style.display = 'none';
+  showToast('🔎 Resolving locations in Nagpur...');
+
+  let fromPoint;
+  let toPoint;
+  try {
+    [fromPoint, toPoint] = await Promise.all([
+      resolveRoutePoint(from),
+      resolveRoutePoint(to)
+    ]);
+  } catch (_err) {
+    showToast('⚠️ Could not find one of the locations. Try a clearer area name.');
+    return;
+  }
+
+  if (haversineKm(fromPoint.lat, fromPoint.lng, toPoint.lat, toPoint.lng) < 0.15) {
+    showToast('⚠️ Origin and destination are too close or same');
+    return;
+  }
 
   // Map travel modes to OSRM profiles
   const profileMap = {
@@ -1152,18 +1258,17 @@ function planRoute() {
   };
 
   const profile = profileMap[mode] || 'car';
-  const coordinates = `${fromZone.lng},${fromZone.lat};${toZone.lng},${toZone.lat}`;
+  const coordinates = `${fromPoint.lng},${fromPoint.lat};${toPoint.lng},${toPoint.lat}`;
   
   // Use OSRM for real street-based routing (no API key required)
   // OSRM routes through actual streets on OpenStreetMap
   const routeUrl = `https://router.project-osrm.org/route/v1/${profile}/${coordinates}?overview=full&geometries=geojson&steps=true`;
 
-  document.getElementById('route-result').style.display = 'none';
   showToast('🔄 Computing real street paths on Nagpur map...');
 
-  fetch(routeUrl)
-  .then(r => r.json())
-  .then(data => {
+  try {
+    const response = await fetch(routeUrl);
+    const data = await response.json();
     if (!data.routes || !data.routes[0]) {
       showToast('⚠️ No street route found between selected locations');
       return;
@@ -1175,10 +1280,10 @@ function planRoute() {
     // Calculate metrics from OSRM data
     const distanceKm = route.distance / 1000;
     const durationMin = route.duration / 60;
-    const avgRisk = ((fromZone.crs + toZone.crs) / 2);
+    const avgRisk = ((fromPoint.crs + toPoint.crs) / 2);
 
     const safeMetrics = {
-      path: [fromZone.id, toZone.id],
+      path: [fromPoint.label, toPoint.label],
       coordinates: coordinates,
       distanceKm: distanceKm,
       timeMin: durationMin,
@@ -1218,16 +1323,22 @@ function planRoute() {
       { padding: 80, duration: 850 }
     );
 
-    activeRoute = { from, to, mode, safePath: safeMetrics, fastPath: fastMetrics };
+    activeRoute = { from: fromPoint.label, to: toPoint.label, mode, safePath: safeMetrics, fastPath: fastMetrics };
     showToast('✅ Real street route found via OSRM (OpenStreetMap)');
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('OSRM error:', err);
     showToast('⚠️ Street routing unavailable - using zone-based path');
-    
+
     // Fallback to synthetic Dijkstra routing
-    const safePath = dijkstra(from, to, mode, 'safe');
-    const fastPath = dijkstra(from, to, mode, 'fast');
+    const fallbackFromZone = getZoneByIdOrName(from);
+    const fallbackToZone = getZoneByIdOrName(to);
+    if (!fallbackFromZone || !fallbackToZone) {
+      showToast('⚠️ Fallback route works only for known mapped zones');
+      return;
+    }
+
+    const safePath = dijkstra(fallbackFromZone.id, fallbackToZone.id, mode, 'safe');
+    const fastPath = dijkstra(fallbackFromZone.id, fallbackToZone.id, mode, 'fast');
 
     if (!safePath || !fastPath) {
       showToast('⚠️ No route found');
@@ -1266,8 +1377,8 @@ function planRoute() {
       { padding: 80, duration: 850 }
     );
 
-    activeRoute = { from, to, mode, safePath, fastPath };
-  });
+    activeRoute = { from: fallbackFromZone.name, to: fallbackToZone.name, mode, safePath, fastPath };
+  }
 }
 
 
@@ -1499,27 +1610,80 @@ function refreshZones() {
   }, 900);
 }
 
-function fetchCurrentLocation() {
+async function fetchCurrentLocation() {
+  if (!window.isSecureContext) {
+    const ok = await fetchApproxLocationByIP();
+    showToast(ok
+      ? 'Secure GPS unavailable here. Using approximate network location.'
+      : 'Location unavailable. Open app on https/localhost and allow location.');
+    return;
+  }
+
   if (!navigator.geolocation) {
-    showToast('Location is not supported in this browser');
+    const ok = await fetchApproxLocationByIP();
+    showToast(ok ? 'GPS not supported. Using approximate network location.' : 'Location not supported in this browser.');
     return;
   }
 
   showToast('Fetching your current location...');
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, false);
-      map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 800 });
-      startLocationTracking();
 
-      showToast('Current location updated');
+  const applyGpsLocation = pos => {
+    updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, false);
+    map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 800 });
+    startLocationTracking();
+    showToast('Current location updated');
+  };
+
+  navigator.geolocation.getCurrentPosition(
+    applyGpsLocation,
+    _errHigh => {
+      // Retry once with relaxed options for browsers/devices that reject high-accuracy requests.
+      navigator.geolocation.getCurrentPosition(
+        applyGpsLocation,
+        async errLow => {
+          console.error('Geolocation error:', errLow);
+          const ok = await fetchApproxLocationByIP();
+          showToast(ok
+            ? 'GPS unavailable/blocked. Using approximate network location.'
+            : 'Location permission denied or unavailable.');
+        },
+        { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 }
+      );
     },
-    err => {
-      console.error('Geolocation error:', err);
-      showToast('Location permission denied or unavailable');
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
   );
+}
+
+async function fetchApproxLocationByIP() {
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    const data = await res.json();
+    const lat = Number(data?.latitude);
+    const lng = Number(data?.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      updateLocationFromCoords(lat, lng, false);
+      map.flyTo({ center: [lng, lat], zoom: 12, duration: 700 });
+      return true;
+    }
+  } catch (_) {
+    // fall through to secondary provider
+  }
+
+  try {
+    const res2 = await fetch('https://ipwho.is/');
+    const data2 = await res2.json();
+    const lat2 = Number(data2?.latitude);
+    const lng2 = Number(data2?.longitude);
+    if (Number.isFinite(lat2) && Number.isFinite(lng2)) {
+      updateLocationFromCoords(lat2, lng2, false);
+      map.flyTo({ center: [lng2, lat2], zoom: 12, duration: 700 });
+      return true;
+    }
+  } catch (err) {
+    console.error('Approx location fallback failed:', err);
+  }
+
+  return false;
 }
 
 function startLocationTracking() {
@@ -1633,31 +1797,65 @@ function addEmergencyContactPrompt() {
     phone: cleanedPhone
   });
 
+  persistEmergencyContacts();
   renderEmergencyContacts();
   showToast('Emergency contact added and linked to SOS');
 }
 
-function triggerSOS() {
-  if (sosTimer) return;
-
-  document.getElementById('sos-text').style.display = 'none';
-  document.getElementById('sos-countdown').style.display = 'block';
-  sosSeconds = 5;
-  document.getElementById('sos-countdown').textContent = sosSeconds;
-
-  sosTimer = setInterval(() => {
-    sosSeconds -= 1;
-    if (sosSeconds <= 0) {
-      clearInterval(sosTimer);
-      sosTimer = null;
-      fireSOS();
-      return;
-    }
-    document.getElementById('sos-countdown').textContent = sosSeconds;
-  }, 1000);
+function persistEmergencyContacts() {
+  try {
+    localStorage.setItem(EMERGENCY_CONTACTS_STORAGE_KEY, JSON.stringify(EMERGENCY_CONTACTS));
+  } catch (err) {
+    console.error('Persist contacts failed:', err);
+  }
 }
 
-function fireSOS() {
+function loadEmergencyContactsFromStorage() {
+  try {
+    const raw = localStorage.getItem(EMERGENCY_CONTACTS_STORAGE_KEY);
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+
+    const normalized = parsed
+      .filter(c => c && c.name && c.phone)
+      .map(c => ({
+        name: String(c.name).trim(),
+        relation: String(c.relation || 'CUSTOM').trim() || 'CUSTOM',
+        phone: normalizePhone(String(c.phone))
+      }))
+      .filter(c => c.name && c.phone.length >= 8);
+
+    if (normalized.length) {
+      EMERGENCY_CONTACTS = normalized;
+    }
+  } catch (err) {
+    console.error('Load contacts failed:', err);
+  }
+}
+
+function triggerSOS() {
+  if (sosDispatching) return;
+
+  sosDispatching = true;
+  const btn = document.getElementById('sos-btn');
+  if (btn) btn.disabled = true;
+
+  fireSOS()
+    .catch(err => {
+      console.error('SOS dispatch failed:', err);
+      showToast('Failed to send SOS. Try again.');
+    })
+    .finally(() => {
+      sosDispatching = false;
+      if (btn) btn.disabled = false;
+    });
+}
+
+async function fireSOS() {
+  await checkSmsBackendStatus();
+
   const user = {
     name: 'Aditi Kulkarni',
     phone: '+91 90000 11223',
@@ -1671,18 +1869,29 @@ function fireSOS() {
   playAlarmTone();
 
   const smsBody = buildSOSMessage(user, loc, nearestPS);
+  const sendResults = await sendSosSmsToAllContacts(smsBody);
+  const sentCount = sendResults.filter(r => r.ok).length;
+  const resultMap = Object.fromEntries(sendResults.map(r => [r.phone, r]));
+  const configIssue = sentCount === 0 && (!smsBackendStatus.configured || smsBackendStatus.provider === 'none' || smsBackendStatus.provider === 'offline');
 
   document.getElementById('sos-normal').style.display = 'none';
   document.getElementById('sos-sent').style.display = 'block';
-  document.getElementById('sos-sent-sub').textContent = `SMS ready for ${EMERGENCY_CONTACTS.length} contact(s). Tap links below to send.`;
+  document.getElementById('sos-sent-sub').textContent = configIssue
+    ? `SMS provider not configured. Sent 0/${EMERGENCY_CONTACTS.length}`
+    : `SMS sent to ${sentCount}/${EMERGENCY_CONTACTS.length} contact(s)`;
 
   const contactsHtml = EMERGENCY_CONTACTS.map(c => {
     const safePhone = escapeHtml(c.phone);
     const safeName = escapeHtml(c.name);
     const safeRel = escapeHtml(c.relation);
+    const phoneKey = normalizePhone(c.phone);
+    const result = resultMap[phoneKey];
+    const status = result?.ok ? 'SMS sent' : `Failed: ${escapeHtml(result?.error || 'provider error')}`;
+    const statusColor = result?.ok ? 'var(--green)' : 'var(--orange)';
     return `
       <div style="margin-bottom:6px">
-        <button class="btn btn-outline" style="margin-top:0;padding:7px 10px;text-align:left" onclick="sendSmsToContact('${safePhone}', '${safeName}', '${safeRel}')">Send SMS to ${safeName} (${safeRel})</button>
+        <div style="font-family:var(--mono);font-size:10px;color:${statusColor};margin-bottom:4px">${safeName} (${safeRel}): ${status}</div>
+        <button class="btn btn-outline" style="margin-top:0;padding:7px 10px;text-align:left" onclick="sendSmsToContact('${safePhone}', '${safeName}', '${safeRel}')">Send Manually to ${safeName}</button>
       </div>
     `;
   }).join('');
@@ -1695,14 +1904,19 @@ function fireSOS() {
     <div style="color:var(--text-dim)">?? Live location: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</div>
     <div style="color:var(--text-dim)">?? Nearest police: ${nearestPS.name} (${nearestPS.distanceKm.toFixed(2)} km)</div>
     <div style="color:var(--text-dim)">?? Alarm signal activated</div>
-    <div style="color:var(--text-dim);margin-top:8px">Note: Browser cannot send SMS silently. On mobile, tap button to open SMS app and press Send. On desktop, open this page on your phone.</div>
+    <div style="color:var(--text-dim);margin-top:8px">API send attempted on SOS tap. If any fail, use "Send Manually" for that contact.</div>
+    ${configIssue ? `<div style="color:var(--orange);margin-top:8px">Backend provider is not configured. Add FAST2SMS_API_KEY (preferred) or Twilio credentials in .env, then restart sms-server.</div>` : ''}
   `;
 
-  openFirstSmsComposer(smsBody);
-  showToast('SOS ready. SMS composer opened for first contact.');
+  if (configIssue) {
+    showToast('SMS provider not configured. Check .env and restart sms-server.');
+  } else {
+    showToast(`SOS triggered. SMS sent to ${sentCount}/${EMERGENCY_CONTACTS.length} contact(s).`);
+  }
 }
 
 function buildSOSMessage(user, loc, nearestPS) {
+  const mapLink = `https://maps.google.com/?q=${loc.lat.toFixed(5)},${loc.lng.toFixed(5)}`;
   return [
     'EMERGENCY SOS ALERT',
     `Name: ${user.name}`,
@@ -1710,6 +1924,7 @@ function buildSOSMessage(user, loc, nearestPS) {
     `Blood Group: ${user.bloodGroup}`,
     `Alert ID: ${user.emergencyId}`,
     `Live Location: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`,
+    `Map Link: ${mapLink}`,
     `Nearest Police: ${nearestPS.name} (${nearestPS.distanceKm.toFixed(2)} km)`,
     'Please contact immediately.'
   ].join('\n');
@@ -1726,6 +1941,127 @@ function buildSmsLink(phone, body) {
   const isIOS = /iPad|iPhone|iPod/.test(ua);
   const sep = isIOS ? '&' : '?';
   return `sms:${number}${sep}body=${encodedBody}`;
+}
+
+async function sendSosSmsToAllContacts(message) {
+  if (!EMERGENCY_CONTACTS.length) return [];
+
+  if (SMS_CONFIG.provider === 'backend') {
+    try {
+      const payload = {
+        message,
+        contacts: EMERGENCY_CONTACTS.map(c => ({
+          name: c.name,
+          relation: c.relation,
+          phone: normalizePhone(c.phone)
+        }))
+      };
+
+      const res = await fetch(SMS_CONFIG.backendBulkUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const backendError = data && data.error ? String(data.error) : `HTTP ${res.status}`;
+        return EMERGENCY_CONTACTS.map(c => ({
+          ok: false,
+          phone: normalizePhone(c.phone),
+          name: c.name,
+          relation: c.relation,
+          error: `Bulk SMS failed: ${backendError}`
+        }));
+      }
+
+      if (!data || !Array.isArray(data.results)) {
+        return EMERGENCY_CONTACTS.map(c => ({
+          ok: false,
+          phone: normalizePhone(c.phone),
+          name: c.name,
+          relation: c.relation,
+          error: 'Bulk send response invalid'
+        }));
+      }
+
+      return data.results.map(r => ({
+        ok: Boolean(r.ok),
+        phone: normalizePhone(r.phone),
+        name: r.name || '',
+        relation: r.relation || '',
+        error: r.error || ''
+      }));
+    } catch (err) {
+      return EMERGENCY_CONTACTS.map(c => ({
+        ok: false,
+        phone: normalizePhone(c.phone),
+        name: c.name,
+        relation: c.relation,
+        error: 'Bulk SMS backend unreachable. Start server: npm run sms-server'
+      }));
+    }
+  }
+
+  const tasks = EMERGENCY_CONTACTS.map(async c => {
+    const phone = normalizePhone(c.phone);
+    const result = await sendSmsViaProvider(phone, message);
+    return { ...result, name: c.name, relation: c.relation };
+  });
+
+  return Promise.all(tasks);
+}
+
+async function sendSmsViaProvider(phone, message) {
+  if (!SMS_CONFIG.enabled) {
+    return { ok: false, phone, error: 'SMS provider disabled' };
+  }
+
+  if (SMS_CONFIG.provider === 'backend') {
+    try {
+      const res = await fetch(SMS_CONFIG.backendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message })
+      });
+
+      const data = await res.json();
+      return {
+        ok: Boolean(data && data.success),
+        phone,
+        error: data && !data.success ? (data.error || 'Backend rejected request') : ''
+      };
+    } catch (err) {
+      return { ok: false, phone, error: 'SMS backend unreachable. Start server: npm run sms-server' };
+    }
+  }
+
+  if (SMS_CONFIG.provider === 'textbelt') {
+    try {
+      const body = new URLSearchParams({
+        phone,
+        message,
+        key: SMS_CONFIG.textbeltApiKey
+      });
+
+      const res = await fetch('https://textbelt.com/text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: body.toString()
+      });
+
+      const data = await res.json();
+      return {
+        ok: Boolean(data && data.success),
+        phone,
+        error: data && !data.success ? (data.error || 'SMS gateway rejected request') : ''
+      };
+    } catch (err) {
+      return { ok: false, phone, error: err?.message || 'Network error' };
+    }
+  }
+
+  return { ok: false, phone, error: 'Unsupported SMS provider' };
 }
 
 function sendSmsToContact(phone, name, relation) {
@@ -1763,16 +2099,9 @@ function resetSOS() {
   document.getElementById('sos-text').style.display = 'block';
   document.getElementById('sos-countdown').style.display = 'none';
   document.getElementById('sos-countdown').textContent = '5';
+  const btn = document.getElementById('sos-btn');
+  if (btn) btn.disabled = false;
 }
-
-document.getElementById('sos-btn').addEventListener('dblclick', () => {
-  if (!sosTimer) return;
-  clearInterval(sosTimer);
-  sosTimer = null;
-  document.getElementById('sos-text').style.display = 'block';
-  document.getElementById('sos-countdown').style.display = 'none';
-  showToast('SOS cancelled');
-});
 
 function initDashboard() {
   const counts = { high: 0, moderate: 0, advisory: 0, safe: 0 };
@@ -1979,9 +2308,9 @@ function pickSeverity(baseRisk) {
 }
 
 function tierFromCRS(crs) {
-  if (crs >= 0.75) return 'high';
-  if (crs >= 0.55) return 'moderate';
-  if (crs >= 0.35) return 'advisory';
+  if (crs >= 0.60) return 'high';
+  if (crs >= 0.45) return 'moderate';
+  if (crs >= 0.30) return 'advisory';
   return 'safe';
 }
 

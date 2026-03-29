@@ -8,18 +8,22 @@
     "web": "expo start --web",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "sms-server": "node sms-server.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
+    "cors": "^2.8.5",
     "expo": "~52.0.38",
     "expo-asset": "~11.0.5",
     "expo-status-bar": "~2.0.1",
+    "express": "^4.21.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.9",
     "react-native-svg": "15.8.0",
-    "react-native-web": "~0.19.13"
+    "react-native-web": "~0.19.13",
+    "twilio": "^5.5.4"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
