@@ -1642,11 +1642,12 @@ async function fetchCurrentLocation() {
 
   if (!navigator.geolocation) {
     console.error('[LOC] Geolocation not supported');
-    showToast('❌ Geolocation not supported in this browser');
+    console.log('[LOC] Fallback: Using IP-based geolocation');
+    fetchLocationFromIP();
     return;
   }
 
-  // Request HIGH ACCURACY location from system
+  // Request HIGH ACCURACY location from system (with longer timeout)
   navigator.geolocation.getCurrentPosition(
     (position) => {
       // SUCCESS - Got real location from browser
@@ -1668,34 +1669,70 @@ async function fetchCurrentLocation() {
         duration: 1000 
       });
       
-      showToast(`✓ Current location: ${lat.toFixed(4)}, ${lng.toFixed(4)} (±${Math.round(accuracy)}m)`);
+      showToast(`✓ Location: ${lat.toFixed(4)}, ${lng.toFixed(4)} (±${Math.round(accuracy)}m)`);
       startLocationTracking();
     },
     (error) => {
-      // ERROR - Location permission denied or unavailable
-      console.error('[LOC] Permission denied or location unavailable:', {
+      // ERROR - Try IP-based geolocation as fallback
+      console.error('[LOC] Browser geolocation failed:', {
         code: error.code,
         message: error.message
       });
 
-      let msg = 'Location unavailable';
-      if (error.code === 1) msg = '❌ Location permission denied. Please enable location access in browser settings.';
-      if (error.code === 2) msg = '❌ Browser could not determine location.';
-      if (error.code === 3) msg = '❌ Location request timed out.';
-
-      showToast(msg);
+      if (error.code === 1) {
+        console.log('[LOC] Permission denied - trying IP geolocation');
+      }
       
-      // Fallback to Nagpur center
-      console.log('[LOC] Using Nagpur city center as fallback');
-      updateLocationFromCoords(21.1458, 79.0882, true);
-      map.flyTo({ center: [79.0882, 21.1458], zoom: 12, duration: 600 });
+      console.log('[LOC] Falling back to IP-based geolocation');
+      fetchLocationFromIP();
     },
     {
       enableHighAccuracy: true,  // Request GPS if available
-      timeout: 10000,             // Wait up to 10 seconds
-      maximumAge: 0               // Don't use cached location
+      timeout: 15000,            // Wait up to 15 seconds for GPS
+      maximumAge: 0              // Don't use cached location
     }
   );
+}
+
+async function fetchLocationFromIP() {
+  try {
+    console.log('[LOC] Fetching location from IP address...');
+    
+    // Try ip-api.com first (usually more reliable)
+    const res = await fetch('https://ip-api.com/json/?fields=lat,lon,city,country,status');
+    const data = await res.json();
+    
+    if (data.status === 'success' && data.lat && data.lon) {
+      const lat = data.lat;
+      const lng = data.lon;
+      
+      console.log(`[LOC] ✓ Got IP-based location:`, {
+        latitude: lat,
+        longitude: lng,
+        city: data.city,
+        country: data.country
+      });
+
+      updateLocationFromCoords(lat, lng, true);
+      map.flyTo({ 
+        center: [lng, lat], 
+        zoom: 13, 
+        duration: 800 
+      });
+      
+      showToast(`✓ Location (IP): ${data.city}, ${data.country}`);
+      startLocationTracking();
+      return;
+    }
+  } catch (err) {
+    console.error('[LOC] IP geolocation failed:', err);
+  }
+
+  // Final fallback to Nagpur center
+  console.log('[LOC] Using Nagpur city center as final fallback');
+  updateLocationFromCoords(21.1458, 79.0882, false);
+  map.flyTo({ center: [79.0882, 21.1458], zoom: 12, duration: 600 });
+  showToast('📍 Using Nagpur city center');
 }
 
 function startLocationTracking() {
