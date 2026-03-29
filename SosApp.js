@@ -8,13 +8,17 @@ import {
   AppState,
   BackHandler,
   Vibration,
+  TextInput,
+  Platform,
 } from 'react-native';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
 
-const SOS_BACKEND_URL = 'http://localhost:3001/api/send-sos-bulk';
+const DEFAULT_SOS_BACKEND_URL = Platform.OS === 'android'
+  ? 'http://10.0.2.2:3001/api/send-sos-bulk'
+  : 'http://localhost:3001/api/send-sos-bulk';
 const MAX_QUICK_PRESSES = 3;
 const QUICK_PRESS_TIMEOUT = 1500; // 1.5 seconds
 
@@ -26,6 +30,9 @@ export default function SosApp() {
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [lastLocation, setLastLocation] = useState(null);
   const [status, setStatus] = useState('Ready');
+  const [backendUrl, setBackendUrl] = useState(DEFAULT_SOS_BACKEND_URL);
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
   const pressTimeoutRef = useRef(null);
   const appStateRef = useRef(AppState.currentState);
   const locationWatchRef = useRef(null);
@@ -143,6 +150,11 @@ export default function SosApp() {
       if (stored) {
         setEmergencyContacts(JSON.parse(stored));
       }
+
+      const storedBackendUrl = await SecureStore.getItemAsync('sosBackendUrl');
+      if (storedBackendUrl) {
+        setBackendUrl(storedBackendUrl);
+      }
     } catch (err) {
       console.error('Load contacts error:', err);
     }
@@ -155,6 +167,29 @@ export default function SosApp() {
     } catch (err) {
       console.error('Save contacts error:', err);
     }
+  };
+
+  const saveBackendUrl = async (value) => {
+    const trimmed = String(value || '').trim();
+    if (!trimmed) {
+      Alert.alert('Invalid URL', 'Backend URL cannot be empty');
+      return;
+    }
+    try {
+      await SecureStore.setItemAsync('sosBackendUrl', trimmed);
+      setBackendUrl(trimmed);
+      showStatusToast('SOS backend URL saved');
+    } catch (err) {
+      console.error('Save backend URL error:', err);
+      Alert.alert('Error', 'Failed to save backend URL');
+    }
+  };
+
+  const showStatusToast = (message) => {
+    setStatus(message);
+    setTimeout(() => {
+      setStatus('Ready');
+    }, 2000);
   };
 
   const triggerSOS = async () => {
@@ -195,13 +230,16 @@ export default function SosApp() {
         })),
       };
 
-      const response = await fetch(SOS_BACKEND_URL, {
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || `Backend error (${response.status})`);
+      }
       const sentCount = data.results?.filter((r) => r.ok).length || 0;
 
       setStatus(`✅ SOS sent to ${sentCount}/${emergencyContacts.length} contact(s)`);
@@ -230,35 +268,25 @@ export default function SosApp() {
   };
 
   const addContact = () => {
-    Alert.prompt(
-      'Add Emergency Contact',
-      'Enter contact name and phone (e.g., "Mom +919876543210")',
-      [
-        {
-          text: 'Cancel',
-          onPress: () => {},
-          style: 'cancel',
-        },
-        {
-          text: 'Add',
-          onPress: (input) => {
-            const match = input.match(/(.+?)\s+([\+\d\s\-()]{8,})/);
-            if (!match) {
-              Alert.alert('Invalid', 'Format: Name PhoneNumber');
-              return;
-            }
-            const newContact = {
-              name: match[1].trim(),
-              relation: 'CUSTOM',
-              phone: match[2].replace(/[^\d+]/g, ''),
-            };
-            const updated = [...emergencyContacts, newContact];
-            saveEmergencyContacts(updated);
-            Alert.alert('Success', `${newContact.name} added`);
-          },
-        },
-      ]
-    );
+    const name = String(newContactName || '').trim();
+    const phone = String(newContactPhone || '').replace(/[^\d+]/g, '');
+
+    if (!name || phone.length < 8) {
+      Alert.alert('Invalid', 'Enter valid name and phone number');
+      return;
+    }
+
+    const newContact = {
+      name,
+      relation: 'CUSTOM',
+      phone,
+    };
+
+    const updated = [...emergencyContacts, newContact];
+    saveEmergencyContacts(updated);
+    setNewContactName('');
+    setNewContactPhone('');
+    Alert.alert('Success', `${newContact.name} added`);
   };
 
   const removeContact = (index) => {
@@ -330,9 +358,40 @@ export default function SosApp() {
             </View>
           ))
         )}
+        <TextInput
+          style={styles.input}
+          placeholder="Contact name"
+          placeholderTextColor="#777"
+          value={newContactName}
+          onChangeText={setNewContactName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Phone number (+91...)"
+          placeholderTextColor="#777"
+          keyboardType="phone-pad"
+          value={newContactPhone}
+          onChangeText={setNewContactPhone}
+        />
         <TouchableOpacity style={styles.addButton} onPress={addContact}>
           <Text style={styles.addButtonText}>+ Add Contact</Text>
         </TouchableOpacity>
+
+        <View style={styles.infoBox}>
+          <Text style={styles.infoTitle}>SOS Backend URL</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="http://192.168.x.x:3001/api/send-sos-bulk"
+            placeholderTextColor="#777"
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={backendUrl}
+            onChangeText={setBackendUrl}
+          />
+          <TouchableOpacity style={styles.addButton} onPress={() => saveBackendUrl(backendUrl)}>
+            <Text style={styles.addButtonText}>Save Backend URL</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Info */}
@@ -488,6 +547,17 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     marginTop: 8,
+  },
+  input: {
+    backgroundColor: '#111',
+    borderWidth: 1,
+    borderColor: '#2d2d2d',
+    color: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 8,
+    fontSize: 13,
   },
   addButtonText: {
     color: '#00E676',

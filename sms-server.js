@@ -214,6 +214,15 @@ app.post('/api/send-sos-bulk', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`SMS server running on http://localhost:${PORT}`);
+});
+
+server.on('error', err => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.log(`SMS server already running on port ${PORT}. Reusing existing instance.`);
+    process.exit(0);
+  }
+  console.error('SMS server startup failed:', err);
+  process.exit(1);
 });
