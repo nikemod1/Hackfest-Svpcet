@@ -1622,67 +1622,65 @@ function refreshZones() {
 }
 
 async function fetchCurrentLocation() {
-  console.log('[LOC] Fetching location for your system...');
-  showToast('Getting location...');
+  console.log('[LOC] Requesting system location...');
+  showToast('🔍 Accessing your system location...');
 
-  // Try GPS first (if browser has access)
-  if (navigator.geolocation) {
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          console.log('[LOC] GPS SUCCESS:', pos.coords.latitude, pos.coords.longitude);
-          updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, true);
-          map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 800 });
-          showToast('✓ Location: GPS detected');
-          resolve();
-        },
-        (err) => {
-          console.warn('[LOC] GPS failed:', err.message);
-          // GPS failed - use simple web service with CORS support
-          fetchLocationViaWeb().then(resolve);
-        },
-        { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
-      );
-    });
-  } else {
-    // No GPS support - try web service
-    await fetchLocationViaWeb();
+  if (!navigator.geolocation) {
+    console.error('[LOC] Geolocation not supported');
+    showToast('❌ Geolocation not supported in this browser');
+    return;
   }
-}
 
-async function fetchLocationViaWeb() {
-  console.log('[LOC] Trying web-based location service...');
-  
-  // Use a CORS-friendly service
-  try {
-    const res = await fetch('https://ipapi.co/json/', { 
-      headers: { 'Accept': 'application/json' }
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      const lat = parseFloat(data.latitude);
-      const lng = parseFloat(data.longitude);
+  // Request HIGH ACCURACY location from system
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      // SUCCESS - Got real location from browser
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
       
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        console.log('[LOC] Web service success:', lat, lng);
-        updateLocationFromCoords(lat, lng, true);
-        map.flyTo({ center: [lng, lat], zoom: 12, duration: 700 });
-        showToast(`✓ Location: ${data.city || 'Detected'}`);
-        return;
-      }
-    }
-  } catch (err) {
-    console.warn('[LOC] Web service failed:', err.message);
-  }
+      console.log(`[LOC] ✓ SUCCESS - Got location from system:`, {
+        latitude: lat,
+        longitude: lng,
+        accuracy: accuracy + 'm'
+      });
 
-  // Final fallback: Use Nagpur city center
-  console.log('[LOC] Using default: Nagpur city center');
-  const nagpurLat = 21.1458;
-  const nagpurLng = 79.0882;
-  updateLocationFromCoords(nagpurLat, nagpurLng, true);
-  map.flyTo({ center: [nagpurLng, nagpurLat], zoom: 12, duration: 600 });
-  showToast('📍 Nagpur city center (enable GPS for accurate location)');
+      // Update map and display
+      updateLocationFromCoords(lat, lng, true);
+      map.flyTo({ 
+        center: [lng, lat], 
+        zoom: 14, 
+        duration: 1000 
+      });
+      
+      showToast(`✓ Current location: ${lat.toFixed(4)}, ${lng.toFixed(4)} (±${Math.round(accuracy)}m)`);
+      startLocationTracking();
+    },
+    (error) => {
+      // ERROR - Location permission denied or unavailable
+      console.error('[LOC] Permission denied or location unavailable:', {
+        code: error.code,
+        message: error.message
+      });
+
+      let msg = 'Location unavailable';
+      if (error.code === 1) msg = '❌ Location permission denied. Please enable location access in browser settings.';
+      if (error.code === 2) msg = '❌ Browser could not determine location.';
+      if (error.code === 3) msg = '❌ Location request timed out.';
+
+      showToast(msg);
+      
+      // Fallback to Nagpur center
+      console.log('[LOC] Using Nagpur city center as fallback');
+      updateLocationFromCoords(21.1458, 79.0882, true);
+      map.flyTo({ center: [79.0882, 21.1458], zoom: 12, duration: 600 });
+    },
+    {
+      enableHighAccuracy: true,  // Request GPS if available
+      timeout: 10000,             // Wait up to 10 seconds
+      maximumAge: 0               // Don't use cached location
+    }
+  );
 }
 
 function startLocationTracking() {
