@@ -1,19 +1,60 @@
 {
   "expo": {
-    "name": "APSAS Safety Web",
-    "slug": "apsas-safety-web",
+    "name": "APSAS SOS",
+    "slug": "apsas-sos",
     "version": "1.0.0",
     "orientation": "portrait",
-    "platforms": [
-      "android",
-      "ios",
-      "web"
-    ],
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a1a"
+    },
+    "ios": {
+      "supportsTabletMode": false,
+      "bundleIdentifier": "com.apsas.sos",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "APSAS needs your location for emergency alerts",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "APSAS needs your location for background SOS monitoring"
+      }
+    },
+    "android": {
+      "package": "com.apsas.sos",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET",
+        "VIBRATE"
+      ],
+      "useNextNotificationFormat": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a1a"
+      }
+    },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "output": "static"
     },
     "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "APSAS needs your location for emergency alerts."
+        }
+      ],
+      [
+        "expo-keep-awake",
+        {
+          "isExpoUpdateListenerEnabled": false
+        }
+      ],
+      "expo-secure-store",
       "expo-asset"
-    ]
+    ],
+    "scheme": "apsas",
+    "description": "Emergency SOS alert system. Triple power button click triggers instant alerts."
   }
 }
