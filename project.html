@@ -315,6 +315,24 @@ select option{background:var(--card);}
   font-size:18px;
   line-height:1;
 }
+.route-origin{
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,0.45));background:var(--green);border-radius:50%;
+  border:2px solid white;font-size:12px;font-weight:bold;color:#000;
+}
+.route-origin::before{
+  content:'A';
+  font-weight:700;
+}
+.route-destination{
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,0.45));background:var(--red);border-radius:50%;
+  border:2px solid white;font-size:12px;font-weight:bold;color:#fff;
+}
+.route-destination::before{
+  content:'B';
+  font-weight:700;
+}
 
 /* ── SOS SENT ── */
 #sos-sent{display:none;text-align:center;padding:16px;}
@@ -809,6 +827,8 @@ let USER_REPORTS = [];
 let map, popup;
 let userMarker;
 let routeStartMarker = null;
+let routeOriginMarker = null;
+let routeDestinationMarker = null;
 let userLocation = { lat: 21.1458, lng: 79.0882 };
 let userWatchId = null;
 let layerState = { zones: true, heat: true, route: false };
@@ -1307,7 +1327,7 @@ async function planRoute() {
     document.getElementById('toggle-route').classList.add('on');
     selectRoute('safe');
 
-    setRouteStartMarker(coordinates[0]);
+    setRouteMarkers(fromPoint, toPoint);
 
     const lngs = coordinates.map(c => c[0]);
     const lats = coordinates.map(c => c[1]);
@@ -1360,7 +1380,7 @@ async function planRoute() {
     document.getElementById('toggle-route').classList.add('on');
     selectRoute('safe');
 
-    setRouteStartMarker(safePath.coordinates[0]);
+    setRouteMarkers(fallbackFromZone, fallbackToZone);
 
     const all = safePath.coordinates;
     const lngs = all.map(c => c[0]);
@@ -1472,6 +1492,36 @@ function setRouteStartMarker(startCoord) {
   routeStartMarker = new maplibregl.Marker({ element: startEl, anchor: 'bottom' })
     .setLngLat([startCoord[0], startCoord[1]])
     .addTo(map);
+}
+
+function setRouteMarkers(originPoint, destinationPoint) {
+  // Clear existing markers
+  if (routeOriginMarker) {
+    routeOriginMarker.remove();
+    routeOriginMarker = null;
+  }
+  if (routeDestinationMarker) {
+    routeDestinationMarker.remove();
+    routeDestinationMarker = null;
+  }
+
+  // Create origin marker (green)
+  if (originPoint && originPoint.lng && originPoint.lat) {
+    const originEl = document.createElement('div');
+    originEl.className = 'route-origin';
+    routeOriginMarker = new maplibregl.Marker({ element: originEl, anchor: 'bottom' })
+      .setLngLat([originPoint.lng, originPoint.lat])
+      .addTo(map);
+  }
+
+  // Create destination marker (red)
+  if (destinationPoint && destinationPoint.lng && destinationPoint.lat) {
+    const destEl = document.createElement('div');
+    destEl.className = 'route-destination';
+    routeDestinationMarker = new maplibregl.Marker({ element: destEl, anchor: 'bottom' })
+      .setLngLat([destinationPoint.lng, destinationPoint.lat])
+      .addTo(map);
+  }
 }
 
 function startNavigation() {
