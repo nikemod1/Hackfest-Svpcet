@@ -1622,69 +1622,93 @@ function refreshZones() {
 }
 
 async function fetchCurrentLocation() {
-  showToast('Fetching your location...');
+  showToast('Fetching location...');
+  console.log('[LOC] Starting location fetch...');
 
-  // For laptops: try IP-based geolocation first (faster, more reliable)
-  const ipOk = await fetchApproxLocationByIP();
-  if (ipOk) {
-    showToast('Location fetched via network');
-    return;
+  // Try browser geolocation first (works with browser permission)
+  if (navigator.geolocation) {
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          console.log('[LOC] GPS SUCCESS:', pos.coords.latitude, pos.coords.longitude);
+          updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, true);
+          map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 800 });
+          showToast('✓ GPS location detected');
+          resolve();
+        },
+        (gpsErr) => {
+          console.warn('[LOC] GPS failed, trying IP-based location...', gpsErr.message);
+          fetchApproxLocationByIP().then(resolve);
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }
+      );
+    });
   }
 
-  // If IP geolocation fails, try browser GPS (for phones)
-  if (!navigator.geolocation) {
-    showToast('Location services not available');
-    return;
-  }
-
-  const applyGpsLocation = pos => {
-    updateLocationFromCoords(pos.coords.latitude, pos.coords.longitude, false);
-    map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 14, duration: 800 });
-    startLocationTracking();
-    showToast('GPS location updated');
-  };
-
-  navigator.geolocation.getCurrentPosition(
-    applyGpsLocation,
-    err => {
-      console.error('GPS error:', err);
-      showToast('GPS unavailable. Check browser permissions.');
-    },
-    { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-  );
+  // Fallback: IP geolocation
+  console.log('[LOC] No GPS available, using IP geolocation');
+  await fetchApproxLocationByIP();
 }
 
 async function fetchApproxLocationByIP() {
-  // Try multiple IP geolocation services with timeouts
+  console.log('[LOC-IP] Attempting IP geolocation...');
+  
+  // Simple, reliable services
   const services = [
-    { url: 'https://ipapi.co/json/', extract: d => ({ lat: d.latitude, lng: d.longitude }) },
-    { url: 'https://ipwho.is/', extract: d => ({ lat: d.latitude, lng: d.longitude }) },
-    { url: 'https://ipinfo.io/json', extract: d => { const [lat, lng] = (d.loc || '').split(','); return { lat: parseFloat(lat), lng: parseFloat(lng) }; } }
+    {
+      name: 'ip-api.com',
+      url: 'https://ip-api.com/json/?fields=lat,lon,status',
+      extract: (d) => ({ lat: d.lat, lng: d.lon, ok: d.status === 'success' })
+    },
+    {
+      name: 'ipapi.co',
+      url: 'https://ipapi.co/json/',
+      extract: (d) => ({ lat: d.latitude, lng: d.longitude, ok: true })
+    },
+    {
+      name: 'ipinfo.io',
+      url: 'https://ipinfo.io/json?token=9f59d8c9f3eb56',
+      extract: (d) => {
+        const [lat, lng] = (d.loc || '21.1458,79.0882').split(',');
+        return { lat: parseFloat(lat), lng: parseFloat(lng), ok: true };
+      }
+    }
   ];
 
   for (const svc of services) {
     try {
+      console.log(`[LOC-IP] Trying ${svc.name}...`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timer = setTimeout(() => controller.abort(), 4000);
+      
       const res = await fetch(svc.url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      
-      if (!res.ok) continue;
-      const data = await res.json();
-      const { lat, lng } = svc.extract(data);
-      
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        updateLocationFromCoords(lat, lng, false);
-        map.flyTo({ center: [lng, lat], zoom: 12, duration: 700 });
-        console.log(`Location from ${svc.url}: ${lat}, ${lng}`);
-        return true;
+      clearTimeout(timer);
+
+      if (res.ok) {
+        const data = await res.json();
+        const result = svc.extract(data);
+        
+        if (result.ok && Number.isFinite(result.lat) && Number.isFinite(result.lng)) {
+          console.log(`[LOC-IP] SUCCESS from ${svc.name}: ${result.lat}, ${result.lng}`);
+          updateLocationFromCoords(result.lat, result.lng, true);
+          map.flyTo({ center: [result.lng, result.lat], zoom: 12, duration: 700 });
+          showToast(`✓ Location: ${result.lat.toFixed(4)}, ${result.lng.toFixed(4)}`);
+          return true;
+        }
       }
-    } catch (_) {
-      // Continue to next service
+    } catch (err) {
+      console.warn(`[LOC-IP] ${svc.name} failed:`, err.message);
     }
   }
 
-  return false;
+  // Ultimate fallback: Nagpur city center
+  console.log('[LOC-IP] All services failed, using Nagpur default');
+  const nagpurLat = 21.1458;
+  const nagpurLng = 79.0882;
+  updateLocationFromCoords(nagpurLat, nagpurLng, true);
+  map.flyTo({ center: [nagpurLng, nagpurLat], zoom: 12, duration: 700 });
+  showToast('◎ Using Nagpur city center (reload page and enable GPS for accurate location)');
+  return true;
 }
 
 function startLocationTracking() {
