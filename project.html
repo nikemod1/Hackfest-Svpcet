@@ -1625,7 +1625,7 @@ async function fetchCurrentLocation() {
   showToast('Fetching location...');
   console.log('[LOC] Starting location fetch...');
 
-  // Try browser geolocation first (works with browser permission)
+  // Try browser geolocation first
   if (navigator.geolocation) {
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
@@ -1637,78 +1637,76 @@ async function fetchCurrentLocation() {
           resolve();
         },
         (gpsErr) => {
-          console.warn('[LOC] GPS failed, trying IP-based location...', gpsErr.message);
-          fetchApproxLocationByIP().then(resolve);
+          console.warn('[LOC] GPS failed:', gpsErr.message);
+          showLocationSelector();
+          resolve();
         },
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }
+        { enableHighAccuracy: false, timeout: 6000, maximumAge: 0 }
       );
     });
+  } else {
+    showLocationSelector();
   }
-
-  // Fallback: IP geolocation
-  console.log('[LOC] No GPS available, using IP geolocation');
-  await fetchApproxLocationByIP();
 }
 
-async function fetchApproxLocationByIP() {
-  console.log('[LOC-IP] Attempting IP geolocation...');
-  
-  // Simple, reliable services
-  const services = [
-    {
-      name: 'ip-api.com',
-      url: 'https://ip-api.com/json/?fields=lat,lon,status',
-      extract: (d) => ({ lat: d.lat, lng: d.lon, ok: d.status === 'success' })
-    },
-    {
-      name: 'ipapi.co',
-      url: 'https://ipapi.co/json/',
-      extract: (d) => ({ lat: d.latitude, lng: d.longitude, ok: true })
-    },
-    {
-      name: 'ipinfo.io',
-      url: 'https://ipinfo.io/json?token=9f59d8c9f3eb56',
-      extract: (d) => {
-        const [lat, lng] = (d.loc || '21.1458,79.0882').split(',');
-        return { lat: parseFloat(lat), lng: parseFloat(lng), ok: true };
-      }
-    }
-  ];
-
-  for (const svc of services) {
+function showLocationSelector() {
+  // Check localStorage for saved location
+  const saved = localStorage.getItem('apsas.userLocation');
+  if (saved) {
     try {
-      console.log(`[LOC-IP] Trying ${svc.name}...`);
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-      
-      const res = await fetch(svc.url, { signal: controller.signal });
-      clearTimeout(timer);
-
-      if (res.ok) {
-        const data = await res.json();
-        const result = svc.extract(data);
-        
-        if (result.ok && Number.isFinite(result.lat) && Number.isFinite(result.lng)) {
-          console.log(`[LOC-IP] SUCCESS from ${svc.name}: ${result.lat}, ${result.lng}`);
-          updateLocationFromCoords(result.lat, result.lng, true);
-          map.flyTo({ center: [result.lng, result.lat], zoom: 12, duration: 700 });
-          showToast(`✓ Location: ${result.lat.toFixed(4)}, ${result.lng.toFixed(4)}`);
-          return true;
-        }
-      }
-    } catch (err) {
-      console.warn(`[LOC-IP] ${svc.name} failed:`, err.message);
+      const loc = JSON.parse(saved);
+      console.log('[LOC] Using saved location:', loc);
+      updateLocationFromCoords(loc.lat, loc.lng, true);
+      map.flyTo({ center: [loc.lng, loc.lat], zoom: 13, duration: 600 });
+      showToast(`✓ Using saved location: ${loc.name}`);
+      return;
+    } catch (e) {
+      console.warn('[LOC] Saved location invalid');
     }
   }
 
-  // Ultimate fallback: Nagpur city center
-  console.log('[LOC-IP] All services failed, using Nagpur default');
-  const nagpurLat = 21.1458;
-  const nagpurLng = 79.0882;
-  updateLocationFromCoords(nagpurLat, nagpurLng, true);
-  map.flyTo({ center: [nagpurLng, nagpurLat], zoom: 12, duration: 700 });
-  showToast('◎ Using Nagpur city center (reload page and enable GPS for accurate location)');
-  return true;
+  // Show location selector prompt
+  const zoneNames = ZONES.map(z => z.name).sort();
+  const selected = prompt(
+    'GPS unavailable.\n\nSelect your area from the list:\n\n' + 
+    zoneNames.join(', ') +
+    '\n\nOr enter coordinates (lat,lng):\n\n(Examples: Sitabuldi, or 21.1458,79.0882)',
+    'Sitabuldi'
+  );
+
+  if (!selected) {
+    console.log('[LOC] User cancelled location selection');
+    showToast('Location selection cancelled');
+    return;
+  }
+
+  // Try to find zone by name
+  const zone = ZONES.find(z => z.name.toLowerCase() === selected.toLowerCase());
+  if (zone) {
+    console.log('[LOC] Selected zone:', zone.name);
+    updateLocationFromCoords(zone.lat, zone.lng, true);
+    map.flyTo({ center: [zone.lng, zone.lat], zoom: 13, duration: 600 });
+    localStorage.setItem('apsas.userLocation', JSON.stringify({ lat: zone.lat, lng: zone.lng, name: zone.name }));
+    showToast(`✓ Location set to ${zone.name}`);
+    return;
+  }
+
+  // Try to parse coordinates
+  const coords = selected.split(',').map(s => parseFloat(s.trim()));
+  if (coords.length === 2 && Number.isFinite(coords[0]) && Number.isFinite(coords[1])) {
+    console.log('[LOC] User entered coordinates:', coords);
+    updateLocationFromCoords(coords[0], coords[1], true);
+    map.flyTo({ center: [coords[1], coords[0]], zoom: 13, duration: 600 });
+    localStorage.setItem('apsas.userLocation', JSON.stringify({ lat: coords[0], lng: coords[1], name: 'Custom' }));
+    showToast(`✓ Location set to ${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}`);
+    return;
+  }
+
+  // Default to Nagpur center
+  console.log('[LOC] Invalid entry, using Nagpur center');
+  updateLocationFromCoords(21.1458, 79.0882, true);
+  map.flyTo({ center: [79.0882, 21.1458], zoom: 12, duration: 600 });
+  showToast('Area not found. Using Nagpur city center.');
 }
 
 function startLocationTracking() {
