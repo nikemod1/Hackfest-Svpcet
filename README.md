@@ -1,35 +1,115 @@
-# APSAS React Native Web
+# APSAS Safety Platform
 
-This workspace now contains a complete Expo (React Native + Web) website implementation.
+APSAS is a safety-focused project with two web experiences in the same repository:
 
-## Run
+1. Legacy Command Center dashboard (MapLibre static HTML)
+2. Expo React Native Web application
 
-1. Install dependencies
+Both can be run locally, depending on which interface you want.
+
+## Project Modes
+
+### 1) Legacy Dashboard (original look)
+
+This is the classic command-center UI and matches the original project style.
+
+- File: project.html
+- Tech: plain HTML, CSS, JS, MapLibre
+
+Run it with any static server.
+
+Recommended:
+
+npx --yes http-server . -p 8000 -c-1
+
+Open:
+
+http://localhost:8000/project.html
+
+### 2) Expo App (React Native Web)
+
+This is the Expo-based app entrypoint.
+
+- Main files: App.tsx, App.js, SosApp.js
+- Tech: Expo SDK 52, React Native Web
+
+Install and run:
 
 npm install
-
-2. Start web app
-
 npm run web
 
-## Features Implemented
+If your system Node version is too new and Expo fails to boot, run with Node 18:
 
-- Synthetic database with 40 initial crime incident entries
-- Dynamic 4-zone risk map:
-  - High (red)
-  - Moderate (orange)
-  - Adverse (yellow)
-  - Safe (green)
-- Road network rendering on map
-- Dijkstra route planner for safest and fastest routes
-- Route cards with time, distance, and risk level
-- Recent incidents feed
-- Incident reporting with severity and location updates
-- Report history view
-- SOS flow with emergency contacts and nearest police station targeting
-- Dashboard with integer metrics, patrol priority percentages, and risk distribution
+Remove-Item Env:NODE_OPTIONS -ErrorAction SilentlyContinue; npx -y node@18.20.4 ./node_modules/expo/bin/cli start --web
+
+## Available Scripts
+
+- npm start: start Expo
+- npm run web: start Expo web
+- npm run android: start Expo for Android
+- npm run ios: start Expo for iOS
+- npm run sms-server: run local SMS backend
+- npm run lint: run linter
+
+## Features
+
+### Legacy Dashboard (project.html)
+
+- Nagpur zone risk map with heat and zone layers
+- Safe route planner and route comparison
+- SOS simulation flow and contact panel
+- Incident reporting and dashboard analytics
+- Real location attempt with browser geolocation and IP fallback
+
+### Expo App
+
+- React Native UI for SOS and safety workflows
+- Zone and route logic via src/safetyEngine.ts
+- Incident generation, reporting, and dashboard views
+
+## Troubleshooting
+
+### App does not look like the old dashboard
+
+- npm run web launches the Expo app, not project.html
+- Use the static server flow and open /project.html for the old interface
+
+### Location is not using laptop location
+
+- Browser location permission must be allowed for localhost
+- If GPS is unavailable, fallback may use coarse IP location
+- In Chrome, check Site settings for location permission
+
+### Expo web startup errors
+
+Common causes are dependency mismatch or incompatible Node runtime.
+
+Try:
+
+1. npm install
+2. npx expo install --fix
+3. Use Node 18 runtime command shown above
+
+### Port already in use
+
+Run Expo or static server on another port.
+
+Example:
+
+npx --yes http-server . -p 8001 -c-1
+
+## Repository Structure
+
+- project.html: legacy dashboard (original UI)
+- App.tsx: React Native Web app entry
+- App.js: alternate RN app entry and menu shell
+- SosApp.js: SOS-specific RN screen
+- src/safetyEngine.ts: routing, risk, and incident logic
+- sms-server.js: backend SMS service endpoint
+- android/: native Android module and package files
 
 ## Notes
 
-- This app is built with React Native components and runs as a website through React Native Web.
-- The map is drawn using an SVG road network and zone graph for deterministic route safety visualization.
+- The legacy dashboard and Expo app are intentionally separate experiences.
+- For demos of the original command-center interface, prefer project.html.
+- For mobile/web app workflows in Expo, use npm run web or npm start.
