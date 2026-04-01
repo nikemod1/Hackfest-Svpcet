@@ -2,9 +2,40 @@
 
 APSAS is a safety-focused project featuring a Command Center dashboard for real-time incident management and safety coordination.
 
+## Installation
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- npm (comes with Node.js)
+
+### Setup
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd apsas-rnw-web
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
 ## Getting Started
 
-### Legacy Dashboard
+### Running the Dashboard
+
+Simply run:
+```bash
+npm run dashboard
+```
+
+This will automatically:
+- Start the server on port 8000
+- Open the dashboard in your default browser at http://localhost:8000/project.html
+
+### Legacy Dashboard Details
 
 This is the classic command-center UI and matches the original project style.
 
