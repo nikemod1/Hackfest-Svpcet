@@ -1,15 +1,10 @@
 # APSAS Safety Platform
 
-APSAS is a safety-focused project with two web experiences in the same repository:
+APSAS is a safety-focused project featuring a Command Center dashboard for real-time incident management and safety coordination.
 
-1. Legacy Command Center dashboard (MapLibre static HTML)
-2. Expo React Native Web application
+## Getting Started
 
-Both can be run locally, depending on which interface you want.
-
-## Project Modes
-
-### 1) Legacy Dashboard (original look)
+### Legacy Dashboard
 
 This is the classic command-center UI and matches the original project style.
 
@@ -30,35 +25,13 @@ Then open:
 
 http://localhost:8000/project.html
 
-### 2) Expo App (React Native Web)
-
-This is the Expo-based app entrypoint.
-
-- Main files: App.tsx, App.js, SosApp.js
-- Tech: Expo SDK 52, React Native Web
-
-Install and run:
-
-npm install
-npm run web
-
-If your system Node version is too new and Expo fails to boot, run with Node 18:
-
-Remove-Item Env:NODE_OPTIONS -ErrorAction SilentlyContinue; npx -y node@18.20.4 ./node_modules/expo/bin/cli start --web
-
 ## Available Scripts
 
-- npm run dashboard: start Legacy Dashboard on http://localhost:8000 (opens in browser automatically)
-- npm start: start Expo
-- npm run web: start Expo web
-- npm run android: start Expo for Android
-- npm run ios: start Expo for iOS
-- npm run sms-server: run local SMS backend
-- npm run lint: run linter
+- `npm run dashboard` - Start Legacy Dashboard on http://localhost:8000 (opens automatically)
+- `npm run sms-server` - Run local SMS backend
+- `npm run lint` - Run linter
 
 ## Features
-
-### Legacy Dashboard (project.html)
 
 - Nagpur zone risk map with heat and zone layers
 - Safe route planner and route comparison
@@ -66,18 +39,7 @@ Remove-Item Env:NODE_OPTIONS -ErrorAction SilentlyContinue; npx -y node@18.20.4 
 - Incident reporting and dashboard analytics
 - Real location attempt with browser geolocation and IP fallback
 
-### Expo App
-
-- React Native UI for SOS and safety workflows
-- Zone and route logic via src/safetyEngine.ts
-- Incident generation, reporting, and dashboard views
-
 ## Troubleshooting
-
-### App does not look like the old dashboard
-
-- npm run web launches the Expo app, not project.html
-- Use the static server flow and open /project.html for the old interface
 
 ### Location is not using laptop location
 
