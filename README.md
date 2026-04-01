@@ -1,113 +1,122 @@
 # APSAS Safety Platform
 
-APSAS is a safety-focused project featuring a Command Center dashboard for real-time incident management and safety coordination.
+> 🚀 A real-time Command Center dashboard for incident management and safety coordination
+
+APSAS provides a dynamic, map-based interface for monitoring safety zones, planning safe routes, and coordinating emergency response in real-time.
+
+---
+
+## Quick Start ⚡
+
+Get up and running in just 2 steps:
+
+```bash
+npm install
+npm run dashboard
+```
+
+That's it! The dashboard will open automatically at `http://localhost:8000`
+
+---
 
 ## Installation
 
-### Prerequisites
+### What You Need
 
-- Node.js (v16 or higher)
-- npm (comes with Node.js)
+- **Node.js** v16 or higher ([download here](https://nodejs.org/))
+- **npm** (comes automatically with Node.js)
 
-### Setup
+### How to Set Up
 
-1. Clone the repository:
+**Step 1:** Clone the repository
 ```bash
 git clone <repository-url>
 cd apsas-rnw-web
 ```
 
-2. Install dependencies:
+**Step 2:** Install dependencies
 ```bash
 npm install
 ```
 
-## Getting Started
-
-### Running the Dashboard
-
-Simply run:
+**Step 3:** Start the dashboard
 ```bash
 npm run dashboard
 ```
 
-This will automatically:
-- Start the server on port 8000
-- Open the dashboard in your default browser at http://localhost:8000/project.html
+✅ Your dashboard is now running on `http://localhost:8000`
 
-### Legacy Dashboard Details
 
-This is the classic command-center UI and matches the original project style.
+## Available Commands
 
-- File: project.html
-- Tech: plain HTML, CSS, JS, MapLibre
+| Command | What it does |
+|---------|------------|
+| `npm run dashboard` | 🎯 **Start here!** Launches the Command Center dashboard |
+| `npm run sms-server` | 📱 Runs the SMS backend service |
+| `npm run lint` | 🔍 Checks code for quality issues |
 
-Run it with a single command:
+---
 
-npm run dashboard
+## Key Features
 
-This will automatically start the server on port 8000 and open the dashboard in your browser.
+✨ **What you can do:**
 
-Alternatively, run with any static server:
+- 📍 **Real-time Zone Map** - View Nagpur zones with live risk heat mapping
+- 🗺️ **Route Planner** - Compare safe routes and get recommendations
+- 🆘 **SOS Management** - Simulate and manage emergency calls
+- 📊 **Dashboard Analytics** - Track incidents and safety metrics  
+- 🌍 **Smart Location Detection** - GPS + IP-based location fallback
 
-npx --yes http-server . -p 8000 -c-1
+---
 
-Then open:
+## Troubleshooting 🔧
 
-http://localhost:8000/project.html
+### ❓ "Dashboard won't start" or port is in use
 
-## Available Scripts
-
-- `npm run dashboard` - Start Legacy Dashboard on http://localhost:8000 (opens automatically)
-- `npm run sms-server` - Run local SMS backend
-- `npm run lint` - Run linter
-
-## Features
-
-- Nagpur zone risk map with heat and zone layers
-- Safe route planner and route comparison
-- SOS simulation flow and contact panel
-- Incident reporting and dashboard analytics
-- Real location attempt with browser geolocation and IP fallback
-
-## Troubleshooting
-
-### Location is not using laptop location
-
-- Browser location permission must be allowed for localhost
-- If GPS is unavailable, fallback may use coarse IP location
-- In Chrome, check Site settings for location permission
-
-### Expo web startup errors
-
-Common causes are dependency mismatch or incompatible Node runtime.
-
-Try:
-
-1. npm install
-2. npx expo install --fix
-3. Use Node 18 runtime command shown above
-
-### Port already in use
-
-Run Expo or static server on another port.
-
-Example:
-
+**Solution:** The port 8000 is already being used. Run on a different port:
+```bash
 npx --yes http-server . -p 8001 -c-1
+```
+Then open `http://localhost:8001/project.html`
 
-## Repository Structure
+### ❓ Location is showing as incorrect
 
-- project.html: legacy dashboard (original UI)
-- App.tsx: React Native Web app entry
-- App.js: alternate RN app entry and menu shell
-- SosApp.js: SOS-specific RN screen
-- src/safetyEngine.ts: routing, risk, and incident logic
-- sms-server.js: backend SMS service endpoint
-- android/: native Android module and package files
+**Why this happens:** Your browser hasn't granted location permission
 
-## Notes
+**How to fix:**
+1. Open the dashboard
+2. Allow location access when your browser asks
+3. GPS will be used if available, otherwise IP-based location will be used
 
-- The legacy dashboard and Expo app are intentionally separate experiences.
-- For demos of the original command-center interface, prefer project.html.
-- For mobile/web app workflows in Expo, use npm run web or npm start.
+### ❓ Something seems broken after an update
+
+**Try these steps in order:**
+```bash
+npm install
+npm run lint
+npm run dashboard
+```
+
+---
+
+## Project Structure 📁
+
+```
+apsas-rnw-web/
+├── project.html           → The main Command Center dashboard
+├── sms-server.js          → SMS backend service
+├── src/
+│   └── safetyEngine.ts    → Route & incident logic
+├── android/               → Native Android components
+└── package.json           → Project dependencies
+```
+
+---
+
+## Need Help? 💬
+
+- Check the [troubleshooting section](#troubleshooting-) above
+- Make sure Node.js v16+ is installed: `node --version`
+- Check port 8000 is available: `netstat -an | findstr :8000`
+
+---
