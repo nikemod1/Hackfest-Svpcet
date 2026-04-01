@@ -16,13 +16,17 @@ This is the classic command-center UI and matches the original project style.
 - File: project.html
 - Tech: plain HTML, CSS, JS, MapLibre
 
-Run it with any static server.
+Run it with a single command:
 
-Recommended:
+npm run dashboard
+
+This will automatically start the server on port 8000 and open the dashboard in your browser.
+
+Alternatively, run with any static server:
 
 npx --yes http-server . -p 8000 -c-1
 
-Open:
+Then open:
 
 http://localhost:8000/project.html
 
@@ -44,6 +48,7 @@ Remove-Item Env:NODE_OPTIONS -ErrorAction SilentlyContinue; npx -y node@18.20.4 
 
 ## Available Scripts
 
+- npm run dashboard: start Legacy Dashboard on http://localhost:8000 (opens in browser automatically)
 - npm start: start Expo
 - npm run web: start Expo web
 - npm run android: start Expo for Android

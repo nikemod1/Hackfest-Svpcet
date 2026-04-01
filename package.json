@@ -12,15 +12,18 @@
     "build:android-aab": "expo build:android -t app-bundle",
     "prebuild": "expo prebuild --clean",
     "lint": "eslint .",
-    "sms-server": "node sms-server.js"
+    "sms-server": "node sms-server.js",
+    "dashboard": "npx --yes http-server . -p 8000 -c-1 & timeout /t 2 /nobreak & start http://localhost:8000/project.html"
   },
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
     "cors": "^2.8.5",
     "expo": "~52.0.38",
     "expo-asset": "~11.0.5",
+    "expo-font": "~13.0.4",
     "expo-keep-awake": "~13.0.0",
     "expo-location": "~16.5.0",
+    "expo-router": "~4.0.22",
     "expo-secure-store": "~13.0.0",
     "expo-status-bar": "~2.0.1",
     "express": "^4.21.2",

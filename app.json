@@ -45,14 +45,10 @@
           "locationAlwaysAndWhenInUsePermission": "APSAS needs your location for emergency alerts."
         }
       ],
-      [
-        "expo-keep-awake",
-        {
-          "isExpoUpdateListenerEnabled": false
-        }
-      ],
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      "expo-router",
+      "expo-font"
     ],
     "scheme": "apsas",
     "description": "Emergency SOS alert system. Triple power button click triggers instant alerts."
