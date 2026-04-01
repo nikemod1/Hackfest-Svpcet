@@ -15,7 +15,7 @@ npm install
 npm run dashboard
 ```
 
-That's it! The dashboard will open automatically at `http://localhost:8000`
+That's it! The dashboard will open automatically at `http://localhost:8000/project.html` (and `http://localhost:8000` redirects there)
 
 ---
 
@@ -44,7 +44,7 @@ npm install
 npm run dashboard
 ```
 
-✅ Your dashboard is now running on `http://localhost:8000`
+✅ Your dashboard is now running on `http://localhost:8000/project.html`
 
 
 ## Available Commands

@@ -13,7 +13,7 @@
     "prebuild": "expo prebuild --clean",
     "lint": "eslint .",
     "sms-server": "node sms-server.js",
-    "dashboard": "npx --yes http-server . -p 8000 -c-1 & timeout /t 2 /nobreak & start http://localhost:8000/project.html"
+    "dashboard": "npx --yes http-server . -p 8000 -c-1 -o /project.html"
   },
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
